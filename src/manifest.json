@@ -1,0 +1,32 @@
+{
+    "manifest_version": 3,
+    "name": "Your Private Proxy",
+    "version": "0.1",
+    "description": "Manage your proxy settings",
+    "action": {
+        "default_popup": "index.html",
+        "height": 600,
+        "width": 400,
+        "default_icon": {
+            "16": "/assets/favicon16.png",
+            "32": "/assets/favicon32.png",
+            "64": "/assets/favicon64.png",
+            "128": "/assets/favicon128.png"
+          }
+      },
+      "permissions": [
+        "activeTab",
+        "tabs",
+        "proxy",
+        "tabs",
+        "storage",
+        "webRequest",
+        "webRequestBlocking",
+        "scripting",
+        "declarativeNetRequest",
+        "declarativeNetRequestFeedback"
+      ],
+      "background": {
+        "service_worker": "background.js"
+      }
+  }
