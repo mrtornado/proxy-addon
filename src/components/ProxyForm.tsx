@@ -5,30 +5,28 @@ declare const chrome: any;
 interface Proxy {
   host: string;
   port: string;
+  username?: string;
+  password?: string;
+  isActive: boolean;
+  headersActive: boolean;
+  language?: string;
 }
 
 function ProxyForm() {
   const [host, setHost] = useState("");
   const [port, setPort] = useState("");
   const [proxies, setProxies] = useState<Proxy[]>([]);
-  const [activeProxyIndex, setActiveProxyIndex] = useState<number | null>(null);
+  const [language, setLanguage] = useState<string | null>(null);
 
   useEffect(() => {
-    const storedProxies = localStorage.getItem("proxies");
-    if (storedProxies) {
-      setProxies(JSON.parse(storedProxies));
-    }
+    chrome.storage.local.get(["proxies"], (result: { proxies: never[] }) => {
+      const storedProxies = result.proxies || [];
+      setProxies(storedProxies);
+    });
   }, []);
 
   useEffect(() => {
-    const activeProxyIndexStr = localStorage.getItem("activeProxyIndex");
-    if (activeProxyIndexStr !== null) {
-      setActiveProxyIndex(JSON.parse(activeProxyIndexStr));
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("proxies", JSON.stringify(proxies));
+    chrome.storage.local.set({ proxies });
   }, [proxies]);
 
   function isValidIPAddress(ipAddress: string) {
@@ -36,7 +34,7 @@ function ProxyForm() {
     return ipRegex.test(ipAddress);
   }
 
-  function handleActivate() {
+  function handleAddProxy() {
     if (!host || !port) {
       alert("Please enter an IP address and port");
       return;
@@ -47,46 +45,101 @@ function ProxyForm() {
       return;
     }
 
-    const newProxy = { host, port };
+    const newProxy = { host, port, isActive: false, headersActive: false };
     setProxies((prevProxies) => [...prevProxies, newProxy]);
     setHost("");
     setPort("");
   }
 
-  function handleDeactivate(index: number) {
-    const proxy = proxies[index];
-    if (index === activeProxyIndex) {
-      chrome.runtime.sendMessage(
-        { type: "deactivateProxy", host: proxy.host, port: proxy.port },
-        () => {
-          setActiveProxyIndex(null);
-          localStorage.setItem("activeProxyIndex", JSON.stringify(null));
+  function handleToggleHeaders(index: number) {
+    setProxies((prevProxies) =>
+      prevProxies.map((proxy, i) => {
+        if (i === index) {
+          return { ...proxy, headersActive: !proxy.headersActive };
         }
-      );
-    } else {
-      setProxies((prevProxies) => prevProxies.filter((_, i) => i !== index));
-    }
+        return proxy;
+      })
+    );
   }
 
-  function handleActivateProxy(index: number) {
-    const { host, port } = proxies[index];
+  function handleHeaderActivation(index: number) {
+    const proxy = proxies[index];
+
+    // Prevent header activation if the proxy is not active
+    if (!proxy.isActive) {
+      alert("Please activate the proxy before activating headers.");
+      return;
+    }
+
+    handleToggleHeaders(index);
+    const { host, port, headersActive } = proxy;
+    const action = headersActive ? "deactivateHeaders" : "activateHeaders";
+
+    // Send the language as part of the message
+    chrome.runtime.sendMessage({ type: action, host, port, language });
+  }
+
+  async function handleActivateProxy(index: number) {
+    let { host, port, language } = proxies[index];
     const [proxyHost, proxyPort, username, password] = host.split(":");
+
+    // Fetch the language if it's not already available in the proxy object
+    if (!language) {
+      const response = await fetch(`https://ipapi.co/${host}/json/`);
+      const data = await response.json();
+      language = data.languages.split(",")[0];
+    }
+
     chrome.runtime.sendMessage(
       { type: "activateProxy", host: proxyHost, port, username, password },
       () => {
-        setActiveProxyIndex(index);
-        localStorage.setItem("activeProxyIndex", JSON.stringify(index));
+        setProxies((prevProxies) =>
+          prevProxies.map((proxy, i) => {
+            if (i === index) {
+              return { ...proxy, isActive: true, language };
+            } else {
+              // Deactivate headers and send a message to deactivate them
+              if (proxy.headersActive) {
+                chrome.runtime.sendMessage({
+                  type: "deactivateHeaders",
+                  host: proxy.host,
+                  port: proxy.port,
+                });
+              }
+              return { ...proxy, isActive: false, headersActive: false };
+            }
+          })
+        );
+      }
+    );
+  }
+
+  function handleDeactivateProxy(index: number) {
+    const proxy = proxies[index];
+    chrome.runtime.sendMessage(
+      { type: "deactivateProxy", host: proxy.host, port: proxy.port },
+      () => {
+        setProxies((prevProxies) =>
+          prevProxies.map((proxy, i) => {
+            if (i === index) {
+              return { ...proxy, isActive: false };
+            }
+            return proxy;
+          })
+        );
       }
     );
   }
 
   function handleRemoveProxy(index: number) {
-    if (index === activeProxyIndex) {
+    const proxy = proxies[index];
+    if (proxy.isActive) {
       chrome.runtime.sendMessage({ type: "deactivateProxy" }, () => {
-        setActiveProxyIndex(null);
+        setProxies((prevProxies) => prevProxies.filter((_, i) => i !== index));
       });
+    } else {
+      setProxies((prevProxies) => prevProxies.filter((_, i) => i !== index));
     }
-    setProxies((prevProxies) => prevProxies.filter((_, i) => i !== index));
   }
 
   return (
@@ -113,7 +166,7 @@ function ProxyForm() {
           />
         </div>
         <button
-          onClick={handleActivate}
+          onClick={handleAddProxy}
           className="ml-2 inline-flex items-center justify-center p-0.5 mb-2 mr-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-green-400 to-blue-600 group-hover:from-green-400 group-hover:to-blue-600 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-green-200 dark:focus:ring-green-800"
         >
           <span className="relative px-2 py-0.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
@@ -129,10 +182,10 @@ function ProxyForm() {
                 proxy.host
               }:${proxy.port}`}</p>
             </div>
-            {index === activeProxyIndex ? (
+            {proxy.isActive ? (
               <div className="ml-auto">
                 <button
-                  onClick={() => handleDeactivate(index)}
+                  onClick={() => handleDeactivateProxy(index)}
                   className="ml-2 inline-flex items-center justify-center p-0.5 mb-2 mr-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-green-400 to-blue-600 group-hover:from-green-400 group-hover:to-blue-600 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-green-200 dark:focus:ring-green-800"
                 >
                   <span className="relative px-2 py-0.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
@@ -159,6 +212,18 @@ function ProxyForm() {
               >
                 <span className="relative px-2 py-0.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
                   Remove
+                </span>
+              </button>
+            </div>
+            <div>
+              <button
+                onClick={() => handleHeaderActivation(index)}
+                className="ml-2 inline-flex items-center justify-center p-0.5 mb-2 mr-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-green-400 to-blue-600 group-hover:from-green-400 group-hover:to-blue-600 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-green-200 dark:focus:ring-green-800"
+              >
+                <span className="relative px-2 py-0.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
+                  {proxy.headersActive
+                    ? "Deactivate Headers"
+                    : "Activate Headers"}
                 </span>
               </button>
             </div>
