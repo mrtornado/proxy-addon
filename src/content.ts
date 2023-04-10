@@ -10,9 +10,8 @@ function useProperties(properties) {
     const UserAgent = "Agent 007";
 
     // Call the setupUserAgentHook function with the retrieved values
-    setupUserAgentHook(UserAgent, language);
+    setupUserAgentHook(UserAgent, language, timezone);
     // Send a message to the background script to set the timezone
-    chrome.runtime.sendMessage({ type: "setTimezone", timezone: timezone });
   } else {
     console.warn("No active proxy found");
   }
@@ -24,7 +23,7 @@ chrome.storage.local.get(null, (result) => {
   useProperties(result);
 });
 
-function setupUserAgentHook(UserAgent, language) {
+function setupUserAgentHook(UserAgent, language, timezone) {
   if (typeof UserAgent !== "string" && UserAgent == "") return false;
   function addslashes(str) {
     // Quote string with slashes
@@ -32,8 +31,30 @@ function setupUserAgentHook(UserAgent, language) {
   }
   var actualCode =
     "(" +
-    function (newUserAgent, language) {
+    function (newUserAgent, language, timezone) {
       "use strict";
+
+      const OriginalDateTimeFormat = Intl.DateTimeFormat;
+
+      Intl.DateTimeFormat = function (locale, options) {
+        options = options || {};
+        options.timeZone = timezone;
+        return new OriginalDateTimeFormat(locale, options);
+      };
+
+      // Copy the properties from the original object to the new object
+      Object.getOwnPropertyNames(OriginalDateTimeFormat).forEach((prop) => {
+        Intl.DateTimeFormat[prop] = OriginalDateTimeFormat[prop];
+      });
+
+      // Override the resolvedOptions function
+      const originalResolvedOptions =
+        OriginalDateTimeFormat.prototype.resolvedOptions;
+      OriginalDateTimeFormat.prototype.resolvedOptions = function () {
+        const options = originalResolvedOptions.call(this);
+        options.timeZone = timezone;
+        return options;
+      };
 
       var navigator = Object.create(window.navigator);
       function rTMPL(o) {
@@ -152,6 +173,8 @@ function setupUserAgentHook(UserAgent, language) {
     addslashes(UserAgent) +
     '","' +
     addslashes(language) +
+    '","' +
+    addslashes(timezone) +
     '");';
 
   document.documentElement.setAttribute("onreset", actualCode);
