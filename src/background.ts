@@ -1,6 +1,14 @@
 // @ts-nocheck
 import rules from "./rules";
 
+async function getActiveTab() {
+  return new Promise((resolve) => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      resolve(tabs[0]);
+    });
+  });
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   switch (request.type) {
     case "activateProxy":
@@ -112,6 +120,44 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
       );
       return true;
+
+    case "activateContentScript":
+      // Activate the content script
+      console.log("Activating content script");
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        // Inject the content script
+        chrome.scripting
+          .executeScript({
+            target: { tabId: tabs[0].id },
+            files: ["content.js"],
+          })
+          .then(() => {
+            chrome.tabs.sendMessage(tabs[0].id, {
+              type: "toggleContentScript",
+              activate: true,
+            });
+          });
+      });
+      break;
+
+    case "deactivateContentScript":
+      // Deactivate the content script
+      console.log("Deactivating content script");
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        // Inject the content script
+        chrome.scripting
+          .executeScript({
+            target: { tabId: tabs[0].id },
+            files: ["content.js"],
+          })
+          .then(() => {
+            chrome.tabs.sendMessage(tabs[0].id, {
+              type: "toggleContentScript",
+              activate: false,
+            });
+          });
+      });
+      break;
 
     default:
       return false;

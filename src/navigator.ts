@@ -1,3 +1,6 @@
+//@ts-nocheck
+export {};
+console.log("Before setting User-Agent:", window.navigator.userAgent);
 function setupUserAgentHook(UserAgent) {
   if (typeof UserAgent !== "string" && UserAgent == "") return false;
   function addslashes(str) {
@@ -131,3 +134,4 @@ function setupUserAgentHook(UserAgent) {
   document.documentElement.removeAttribute("onreset");
 }
 setupUserAgentHook("Agent 007");
+console.log("After setting User-Agent:", window.navigator.userAgent);

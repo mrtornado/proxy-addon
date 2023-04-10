@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 declare const chrome: any;
 
@@ -76,6 +76,9 @@ function ProxyForm() {
     handleToggleHeaders(index);
     const { host, port, headersActive } = proxy;
     const action = headersActive ? "deactivateHeaders" : "activateHeaders";
+    const contentScriptAction = headersActive
+      ? "deactivateContentScript"
+      : "activateContentScript";
 
     // Send the language as part of the message
     chrome.runtime.sendMessage({
@@ -85,6 +88,9 @@ function ProxyForm() {
       language,
       timezone,
     });
+
+    // Send the contentScriptAction as a separate message
+    chrome.runtime.sendMessage({ type: contentScriptAction });
   }
 
   async function handleActivateProxy(index: number) {

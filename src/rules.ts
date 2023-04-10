@@ -31,7 +31,7 @@ const rules: chrome.declarativeNetRequest.Rule[] = [
       requestHeaders: [
         {
           operation: chrome.declarativeNetRequest.HeaderOperation.SET,
-          header: "timezone",
+          header: "Time-Zone",
           value: "Europe/Bucharest",
         },
       ],
