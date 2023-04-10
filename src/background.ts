@@ -1,13 +1,7 @@
 // @ts-nocheck
 import rules from "./rules";
 
-async function getActiveTab() {
-  return new Promise((resolve) => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      resolve(tabs[0]);
-    });
-  });
-}
+let contentScriptIsActive = false;
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   switch (request.type) {
@@ -124,42 +118,31 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case "activateContentScript":
       // Activate the content script
       console.log("Activating content script");
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        // Inject the content script
-        chrome.scripting
-          .executeScript({
-            target: { tabId: tabs[0].id },
-            files: ["content.js"],
-          })
-          .then(() => {
-            chrome.tabs.sendMessage(tabs[0].id, {
-              type: "toggleContentScript",
-              activate: true,
-            });
-          });
+      contentScriptIsActive = true;
+      chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ["content.js"],
+        });
       });
       break;
 
     case "deactivateContentScript":
       // Deactivate the content script
       console.log("Deactivating content script");
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        // Inject the content script
-        chrome.scripting
-          .executeScript({
-            target: { tabId: tabs[0].id },
-            files: ["content.js"],
-          })
-          .then(() => {
-            chrome.tabs.sendMessage(tabs[0].id, {
-              type: "toggleContentScript",
-              activate: false,
-            });
-          });
-      });
+      contentScriptIsActive = false;
       break;
 
     default:
       return false;
   }
+
+  chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (contentScriptIsActive && changeInfo.status === "complete") {
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ["content.js"],
+      });
+    }
+  });
 });
