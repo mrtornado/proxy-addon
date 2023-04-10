@@ -23,6 +23,24 @@ const rules: chrome.declarativeNetRequest.Rule[] = [
       resourceTypes: allResourceTypes,
     },
   },
+  {
+    id: 2,
+    priority: 1,
+    action: {
+      type: chrome.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
+      requestHeaders: [
+        {
+          operation: chrome.declarativeNetRequest.HeaderOperation.SET,
+          header: "timezone",
+          value: "Europe/Bucharest",
+        },
+      ],
+    },
+    condition: {
+      urlFilter: "*",
+      resourceTypes: allResourceTypes,
+    },
+  },
 ];
 
 export default rules;

@@ -10,6 +10,7 @@ interface Proxy {
   isActive: boolean;
   headersActive: boolean;
   language?: string;
+  timezone?: string;
 }
 
 function ProxyForm() {
@@ -17,6 +18,7 @@ function ProxyForm() {
   const [port, setPort] = useState("");
   const [proxies, setProxies] = useState<Proxy[]>([]);
   const [language, setLanguage] = useState<string | null>(null);
+  const [timezone, setTimezone] = useState<string | null>(null);
 
   useEffect(() => {
     chrome.storage.local.get(["proxies"], (result: { proxies: never[] }) => {
@@ -76,18 +78,25 @@ function ProxyForm() {
     const action = headersActive ? "deactivateHeaders" : "activateHeaders";
 
     // Send the language as part of the message
-    chrome.runtime.sendMessage({ type: action, host, port, language });
+    chrome.runtime.sendMessage({
+      type: action,
+      host,
+      port,
+      language,
+      timezone,
+    });
   }
 
   async function handleActivateProxy(index: number) {
-    let { host, port, language } = proxies[index];
+    let { host, port, language, timezone } = proxies[index];
     const [proxyHost, proxyPort, username, password] = host.split(":");
 
-    // Fetch the language if it's not already available in the proxy object
-    if (!language) {
+    // Fetch the language and timezone if it's not already available in the proxy object
+    if (!language || !timezone) {
       const response = await fetch(`https://ipapi.co/${host}/json/`);
       const data = await response.json();
       language = data.languages.split(",")[0];
+      timezone = data.timezone;
     }
 
     chrome.runtime.sendMessage(
@@ -96,7 +105,7 @@ function ProxyForm() {
         setProxies((prevProxies) =>
           prevProxies.map((proxy, i) => {
             if (i === index) {
-              return { ...proxy, isActive: true, language };
+              return { ...proxy, isActive: true, language, timezone };
             } else {
               // Deactivate headers and send a message to deactivate them
               if (proxy.headersActive) {

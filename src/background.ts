@@ -52,16 +52,50 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
 
     case "activateHeaders":
-      const language = request.language;
-      console.log("Activating headers:", rules);
-      chrome.declarativeNetRequest.updateDynamicRules(
-        {
-          addRules: rules,
-        },
-        () => {
-          sendResponse();
+      chrome.storage.local.get(["proxies"], (result) => {
+        const activeProxy = result.proxies.find((proxy) => proxy.headersActive);
+        if (activeProxy) {
+          const modifiedRules = rules.map((rule) => {
+            if (rule.id === 1) {
+              return {
+                ...rule,
+                action: {
+                  ...rule.action,
+                  requestHeaders: [
+                    {
+                      ...rule.action.requestHeaders[0],
+                      value: activeProxy.language,
+                    },
+                  ],
+                },
+              };
+            } else if (rule.id === 2) {
+              return {
+                ...rule,
+                action: {
+                  ...rule.action,
+                  requestHeaders: [
+                    {
+                      ...rule.action.requestHeaders[0],
+                      value: activeProxy.timezone,
+                    },
+                  ],
+                },
+              };
+            }
+            return rule;
+          });
+          console.log("Activating headers:", modifiedRules);
+          chrome.declarativeNetRequest.updateDynamicRules(
+            {
+              addRules: modifiedRules,
+            },
+            () => {
+              sendResponse();
+            }
+          );
         }
-      );
+      });
       return true;
 
     case "deactivateHeaders":
