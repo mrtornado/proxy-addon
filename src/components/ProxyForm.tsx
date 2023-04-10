@@ -105,6 +105,19 @@ function ProxyForm() {
       timezone = data.timezone;
     }
 
+    // Deactivate headers and content script for the currently active proxy
+    proxies.forEach((proxy, i) => {
+      if (proxy.isActive) {
+        chrome.runtime.sendMessage({
+          type: "deactivateHeaders",
+          host: proxy.host,
+          port: proxy.port,
+        });
+        chrome.runtime.sendMessage({ type: "deactivateContentScript" });
+      }
+    });
+
+    // Activate the new proxy
     chrome.runtime.sendMessage(
       { type: "activateProxy", host: proxyHost, port, username, password },
       () => {
@@ -113,14 +126,6 @@ function ProxyForm() {
             if (i === index) {
               return { ...proxy, isActive: true, language, timezone };
             } else {
-              // Deactivate headers and send a message to deactivate them
-              if (proxy.headersActive) {
-                chrome.runtime.sendMessage({
-                  type: "deactivateHeaders",
-                  host: proxy.host,
-                  port: proxy.port,
-                });
-              }
               return { ...proxy, isActive: false, headersActive: false };
             }
           })
@@ -137,13 +142,21 @@ function ProxyForm() {
         setProxies((prevProxies) =>
           prevProxies.map((proxy, i) => {
             if (i === index) {
-              return { ...proxy, isActive: false };
+              return { ...proxy, isActive: false, headersActive: false };
             }
             return proxy;
           })
         );
       }
     );
+
+    // Deactivate headers and content script for the current proxy
+    chrome.runtime.sendMessage({
+      type: "deactivateHeaders",
+      host: proxy.host,
+      port: proxy.port,
+    });
+    chrome.runtime.sendMessage({ type: "deactivateContentScript" });
   }
 
   function handleRemoveProxy(index: number) {
@@ -193,7 +206,7 @@ function ProxyForm() {
         {proxies.map((proxy, index) => (
           <div key={index} className="flex">
             <div>
-              <p className="ml-2 text-[#fffed8]">{`Proxy ${index + 1}: ${
+              <p className="ml-2 text-[#fffed8]">{`IP Address ${index + 1}: ${
                 proxy.host
               }:${proxy.port}`}</p>
             </div>

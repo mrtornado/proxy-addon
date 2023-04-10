@@ -3,6 +3,30 @@ import rules from "./rules";
 
 let contentScriptIsActive = false;
 
+let attachedTabIds = [];
+
+async function setTimezoneForAllTabs(timezone) {
+  const tabs = await chrome.tabs.query({});
+  tabs.forEach(async (tab) => {
+    if (!tab.url.startsWith("chrome://") && !attachedTabIds.includes(tab.id)) {
+      try {
+        attachedTabIds.push(tab.id);
+        await chrome.debugger.attach({ tabId: tab.id }, "1.2");
+        await chrome.debugger.sendCommand(
+          { tabId: tab.id },
+          "Emulation.setTimezoneOverride",
+          { timezoneId: timezone }
+        );
+      } catch (error) {
+        console.error("Error setting timezone for tab:", error);
+      } finally {
+        chrome.debugger.detach({ tabId: tab.id });
+        attachedTabIds = attachedTabIds.filter((id) => id !== tab.id);
+      }
+    }
+  });
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   switch (request.type) {
     case "activateProxy":
@@ -131,6 +155,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       // Deactivate the content script
       console.log("Deactivating content script");
       contentScriptIsActive = false;
+      break;
+
+    case "setTimezone":
+      setTimezoneForAllTabs(request.timezone);
       break;
 
     default:

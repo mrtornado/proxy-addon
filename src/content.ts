@@ -1,6 +1,30 @@
 //@ts-nocheck
 export {};
-function setupUserAgentHook(UserAgent) {
+
+function useProperties(properties) {
+  // Find the proxy with isActive set to true
+  const activeProxy = properties.proxies.find((proxy) => proxy.isActive);
+
+  if (activeProxy) {
+    const { language, timezone } = activeProxy;
+    const UserAgent = "Agent 007";
+
+    // Call the setupUserAgentHook function with the retrieved values
+    setupUserAgentHook(UserAgent, language);
+    // Send a message to the background script to set the timezone
+    chrome.runtime.sendMessage({ type: "setTimezone", timezone: timezone });
+  } else {
+    console.warn("No active proxy found");
+  }
+}
+
+// Accessing all properties from chrome.storage.local
+chrome.storage.local.get(null, (result) => {
+  // Call the function with the properties
+  useProperties(result);
+});
+
+function setupUserAgentHook(UserAgent, language) {
   if (typeof UserAgent !== "string" && UserAgent == "") return false;
   function addslashes(str) {
     // Quote string with slashes
@@ -8,7 +32,7 @@ function setupUserAgentHook(UserAgent) {
   }
   var actualCode =
     "(" +
-    function (newUserAgent) {
+    function (newUserAgent, language) {
       "use strict";
 
       var navigator = Object.create(window.navigator);
@@ -27,8 +51,8 @@ function setupUserAgentHook(UserAgent) {
         appVersion: rTMPL(newUserAgent),
         platform: rTMPL("Win32"),
         productSub: rTMPL("20030107"),
-        language: rTMPL("en-US"),
-        languages: rTMPL(["en-US", "en"]),
+        language: rTMPL(language),
+        languages: rTMPL(language),
         userAgentData: rTMPL({
           brands: [
             { brand: " Not A;Brand", version: ChromeV },
@@ -126,10 +150,11 @@ function setupUserAgentHook(UserAgent) {
     } +
     ')("' +
     addslashes(UserAgent) +
+    '","' +
+    addslashes(language) +
     '");';
 
   document.documentElement.setAttribute("onreset", actualCode);
   document.documentElement.dispatchEvent(new CustomEvent("reset"));
   document.documentElement.removeAttribute("onreset");
 }
-setupUserAgentHook("Agent 007");
