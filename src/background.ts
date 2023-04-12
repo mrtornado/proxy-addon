@@ -3,29 +3,57 @@ import rules from "./rules";
 
 let contentScriptIsActive = false;
 
-// let attachedTabIds = [];
+let activeProxy = null;
 
-// async function setTimezoneForAllTabs(timezone) {
-//   const tabs = await chrome.tabs.query({});
-//   tabs.forEach(async (tab) => {
-//     if (!tab.url.startsWith("chrome://") && !attachedTabIds.includes(tab.id)) {
-//       try {
-//         attachedTabIds.push(tab.id);
-//         await chrome.debugger.attach({ tabId: tab.id }, "1.2");
-//         await chrome.debugger.sendCommand(
-//           { tabId: tab.id },
-//           "Emulation.setTimezoneOverride",
-//           { timezoneId: timezone }
-//         );
-//       } catch (error) {
-//         console.error("Error setting timezone for tab:", error);
-//       } finally {
-//         chrome.debugger.detach({ tabId: tab.id });
-//         attachedTabIds = attachedTabIds.filter((id) => id !== tab.id);
-//       }
-//     }
-//   });
-// }
+chrome.webRequest.onAuthRequired.addListener(
+  (details, callback) => {
+    console.log("Details:", details);
+    console.log("Active Proxy:", activeProxy);
+
+    chrome.storage.local.get({ proxies: [] }, (result) => {
+      activeProxy = result.proxies.find((proxy) => proxy.isActive);
+    });
+
+    if (activeProxy) {
+      const activeProxyPort = parseInt(activeProxy.port, 10);
+      const challengerPort = parseInt(details.challenger.port, 10);
+
+      console.log(
+        "Active Proxy Host:",
+        activeProxy.host,
+        "Challenger Host:",
+        details.challenger.host
+      );
+      console.log(
+        "Active Proxy Port:",
+        activeProxyPort,
+        "Challenger Port:",
+        challengerPort
+      );
+
+      if (
+        activeProxy.host === details.challenger.host &&
+        activeProxyPort === challengerPort
+      ) {
+        const authCredentials = {
+          username: activeProxy.username,
+          password: activeProxy.password,
+        };
+
+        console.log("Auth Credentials:", authCredentials);
+        callback({ authCredentials });
+      } else {
+        console.log("Proxy and Challenger do not match.");
+        callback({ cancel: true });
+      }
+    } else {
+      console.log("No Active Proxy found.");
+      callback({ cancel: true });
+    }
+  },
+  { urls: ["<all_urls>"] },
+  ["asyncBlocking"]
+);
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   switch (request.type) {
@@ -157,16 +185,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       contentScriptIsActive = false;
       break;
 
-    case "setTimezone":
-      setTimezoneForAllTabs(request.timezone);
-      break;
-
     default:
       return false;
   }
 
   chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (contentScriptIsActive && changeInfo.status === "complete") {
+    if (
+      contentScriptIsActive &&
+      changeInfo.status === "complete" &&
+      !tab.url.startsWith("chrome://")
+    ) {
       chrome.scripting.executeScript({
         target: { tabId: tab.id },
         files: ["content.js"],

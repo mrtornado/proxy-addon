@@ -23,6 +23,7 @@
     "proxy",
     "storage",
     "webRequest",
+    "webRequestAuthProvider",
     "declarativeNetRequest",
     "declarativeNetRequestFeedback"
 

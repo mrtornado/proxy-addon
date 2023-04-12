@@ -7,7 +7,8 @@ function useProperties(properties) {
 
   if (activeProxy) {
     const { language, timezone } = activeProxy;
-    const UserAgent = "Agent 007";
+    const UserAgent =
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36";
 
     // Call the setupUserAgentHook function with the retrieved values
     setupUserAgentHook(UserAgent, language, timezone);
