@@ -146,62 +146,72 @@ function ProxyForm() {
   //TODO: Fix this function to wait for the fucking deactivate proxies function properly before fetch because that's why it isn't working. If I deactivate proxies manually activating a new proxy always works !!!! I can just add an alert that user has to deactivate the active proxy first .... but that's just trivial and I don't wanna do that!
   async function handleActivateProxy(index: number) {
     let { host, port, language, timezone } = proxies[index];
-    const [proxyHost, proxyPort] = host.split(":");
 
-    try {
-      if (!language || !timezone || timezone === "UTC") {
-        const response = await fetch(`https://ipapi.co/${host}/json/`).catch(
-          (error) => {
-            console.error("Fetch error:", error);
+    const getProxyCredentials = (callback: Function) => {
+      chrome.storage.sync.get(["username", "password"], (credentials: any) => {
+        callback(credentials);
+      });
+    };
+
+    const sendMessage = (message: any, callback: Function) => {
+      chrome.runtime.sendMessage(message, (response: any) => {
+        if (chrome.runtime.lastError) {
+          console.error(
+            "Error:",
+            chrome.runtime.lastError.message,
+            chrome.runtime.lastError
+          );
+          setTimeout(() => callback(null), 0);
+        } else {
+          // Check if the response is not null or undefined
+          if (response) {
+            setTimeout(() => callback(response), 0);
+          } else {
+            // Handle cases when there is no response
+            console.warn(
+              "No response received for message type:",
+              message.type
+            );
+            setTimeout(() => callback(null), 0);
           }
-        );
-
-        if (response) {
-          const data = await response.json();
-          language = data.languages.split(",")[0];
-          timezone = data.timezone;
-        }
-      }
-    } catch (error) {
-      console.error("Fetch error:", error);
-      language = "en";
-      timezone = "UTC";
-    }
-
-    getProxyCredentials((credentials) => {
-      const { username, password } = credentials;
-
-      proxies.forEach((proxy, i) => {
-        if (proxy.isActive) {
-          chrome.runtime.sendMessage({
-            type: "deactivateHeaders",
-            host: proxy.host,
-            port: proxy.port,
-          });
-          chrome.runtime.sendMessage({ type: "deactivateContentScript" });
         }
       });
+    };
 
-      chrome.runtime.sendMessage(
-        {
-          type: "activateProxy",
-          host: proxyHost,
-          port,
-          username,
-          password,
-        },
-        () => {
-          setProxies((prevProxies) =>
-            prevProxies.map((proxy, i) => {
-              if (i === index) {
-                return { ...proxy, isActive: true, language, timezone };
-              } else {
-                return { ...proxy, isActive: false, headersActive: false };
-              }
-            })
+    getProxyCredentials((credentials: { username: any; password: any }) => {
+      const { username, password } = credentials;
+
+      // Deactivate all proxies
+      sendMessage({ type: "deactivateAllProxies" }, () => {
+        // Deactivate headers and content script of the previously active proxy
+        if (index >= 0) {
+          const activeProxy = proxies[index];
+          sendMessage(
+            {
+              type: "deactivateHeaders",
+              host: activeProxy.host,
+              port: activeProxy.port,
+            },
+            () => {
+              sendMessage({ type: "deactivateContentScript" }, () => {
+                // Activate the new proxy
+                sendMessage(
+                  {
+                    type: "activateProxy",
+                    host: host,
+                    port: port,
+                    username: username,
+                    password: password,
+                  },
+                  () => {
+                    console.log("Proxy activated:", host, port);
+                  }
+                );
+              });
+            }
           );
         }
-      );
+      });
     });
   }
 
