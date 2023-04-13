@@ -78,7 +78,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             console.log(request);
             proxies.push({ host: request.host, port: request.port });
             chrome.storage.local.set({ proxies: proxies }, () => {
-              sendResponse();
+              sendResponse({ success: true }); // Add a response object
             });
           });
         }

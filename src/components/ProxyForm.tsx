@@ -1,7 +1,10 @@
-import { useState, useEffect, useRef } from "react";
-import Modal from "./Modal";
-import { DefaultButton } from "./Buttons";
-import React from "react";
+import { useState, useEffect } from "react";
+import ProxyInputForm from "./ProxyInputForm";
+import PaginationControls from "./PaginationControls";
+import ProxiesDisplay from "./ProxiesDisplay";
+import { useModal } from "../hooks/useModal";
+import { usePagination } from "../hooks/usePagination";
+import { useValidation } from "../hooks/useValidation";
 
 declare const chrome: any;
 
@@ -36,18 +39,28 @@ function getProxyCredentials(
 }
 
 function ProxyForm() {
-  const [directPageInput, setDirectPageInput] = useState("");
-  const inputFileRef = useRef<HTMLInputElement>(null);
-  const [host, setHost] = useState("");
-  const [port, setPort] = useState("");
   const [proxies, setProxies] = useState<Proxy[]>([]);
   const [language, setLanguage] = useState<string | null>(null);
   const [timezone, setTimezone] = useState<string | null>(null);
   const [userAgent, setUserAgent] = useState<string[]>([]);
-  const [showModal, setShowModal] = useState(false);
   const [selectedUserAgent, setSelectedUserAgent] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const { host, port, setHost, setPort, handleAddProxy } = useValidation(
+    "",
+    "",
+    proxies,
+    setProxies
+  );
+  const { showModal, handleShowModal, handleCloseModal } = useModal();
   const proxiesPerPage = 10;
+  const {
+    currentPage,
+    directPageInput,
+    handlePageChange,
+    handleNextPage,
+    handlePreviousPage,
+    handleDirectPageInputChange,
+    handleDirectPageSubmit,
+  } = usePagination(1, proxiesPerPage, proxies.length);
 
   useEffect(() => {
     if (typeof chrome !== "undefined") {
@@ -83,90 +96,6 @@ function ProxyForm() {
       chrome.storage.local.set({ proxies });
     }
   }, [proxies]);
-
-  function isValidIPAddress(ipAddress: string) {
-    const ipRegex = /^(?:\d{1,3}\.){3}\d{1,3}$/;
-    return ipRegex.test(ipAddress);
-  }
-
-  function handleAddProxy() {
-    if (!host || !port) {
-      alert("Please enter an IP address and port");
-      return;
-    }
-
-    if (!isValidIPAddress(host)) {
-      alert("Invalid IP address format. Please enter a valid IP address.");
-      return;
-    }
-
-    const existingProxy = proxies.find((proxy) => proxy.host === host);
-    if (existingProxy) {
-      alert("This proxy host is already in the list");
-      return;
-    }
-
-    const newProxy = { host, port, isActive: false, headersActive: false };
-    setProxies((prevProxies) => [...prevProxies, newProxy]);
-    setHost("");
-    setPort("");
-  }
-
-  const handlePageChange = (pageNumber: any) => {
-    if (
-      pageNumber >= 1 &&
-      pageNumber <= Math.ceil(proxies.length / proxiesPerPage)
-    ) {
-      setCurrentPage(pageNumber);
-    }
-  };
-
-  function getPageNumbers() {
-    const totalPages = Math.ceil(proxies.length / proxiesPerPage);
-    const pageNumbers = [];
-
-    const startPage = Math.max(1, currentPage - 1);
-    const endPage = Math.min(totalPages, startPage + 2);
-
-    for (let i = startPage; i <= endPage; i++) {
-      pageNumbers.push(i);
-    }
-
-    if (startPage > 1) {
-      pageNumbers.unshift(1);
-      pageNumbers.splice(1, 0, "..." as any);
-    }
-    if (endPage < totalPages) {
-      pageNumbers.push("...");
-      pageNumbers.push(totalPages);
-    }
-
-    return pageNumbers;
-  }
-
-  const handleDirectPageInputChange = (event: any) => {
-    setDirectPageInput(event.target.value);
-  };
-
-  const handleDirectPageSubmit = (event: any) => {
-    event.preventDefault();
-    const pageNumber = parseInt(directPageInput);
-    if (
-      pageNumber >= 1 &&
-      pageNumber <= Math.ceil(proxies.length / proxiesPerPage)
-    ) {
-      setCurrentPage(pageNumber);
-    }
-    setDirectPageInput("");
-  };
-
-  const handleNextPage = () => {
-    handlePageChange(currentPage + 1);
-  };
-
-  const handlePreviousPage = () => {
-    handlePageChange(currentPage - 1);
-  };
 
   const indexOfLastProxy = currentPage * proxiesPerPage;
   const indexOfFirstProxy = indexOfLastProxy - proxiesPerPage;
@@ -214,20 +143,27 @@ function ProxyForm() {
     chrome.runtime.sendMessage({ type: contentScriptAction });
   }
 
+  //TODO: Fix this function to wait for the fucking deactivate proxies function properly before fetch because that's why it isn't working. If I deactivate proxies manually activating a new proxy always works !!!!
   async function handleActivateProxy(index: number) {
     let { host, port, language, timezone } = proxies[index];
     const [proxyHost, proxyPort] = host.split(":");
 
-    // Fetch the language and timezone if it's not already available in the proxy object
     try {
       if (!language || !timezone || timezone === "UTC") {
-        const response = await fetch(`https://ipapi.co/${host}/json/`);
-        const data = await response.json();
-        language = data.languages.split(",")[0];
-        timezone = data.timezone;
+        const response = await fetch(`https://ipapi.co/${host}/json/`).catch(
+          (error) => {
+            console.error("Fetch error:", error);
+          }
+        );
+
+        if (response) {
+          const data = await response.json();
+          language = data.languages.split(",")[0];
+          timezone = data.timezone;
+        }
       }
     } catch (error) {
-      console.error(error);
+      console.error("Fetch error:", error);
       language = "en";
       timezone = "UTC";
     }
@@ -235,7 +171,6 @@ function ProxyForm() {
     getProxyCredentials((credentials) => {
       const { username, password } = credentials;
 
-      // Deactivate headers and content script for the currently active proxy
       proxies.forEach((proxy, i) => {
         if (proxy.isActive) {
           chrome.runtime.sendMessage({
@@ -247,9 +182,14 @@ function ProxyForm() {
         }
       });
 
-      // Activate the new proxy
       chrome.runtime.sendMessage(
-        { type: "activateProxy", host: proxyHost, port, username, password },
+        {
+          type: "activateProxy",
+          host: proxyHost,
+          port,
+          username,
+          password,
+        },
         () => {
           setProxies((prevProxies) =>
             prevProxies.map((proxy, i) => {
@@ -342,14 +282,6 @@ function ProxyForm() {
     }
   };
 
-  const handleShowModal = () => {
-    setShowModal(true);
-  };
-
-  const handleCloseModal = () => {
-    setShowModal(false);
-  };
-
   function parseProxyLine(line: string) {
     const parts = line.split(":");
     const proxy = {
@@ -368,16 +300,20 @@ function ProxyForm() {
       const content = event.target?.result as string;
       const lines = content.split(/\r?\n/);
       const newProxies = lines
-        .filter((line) => line.trim() !== "")
-        .map((line) => {
+        .filter((line, index) => {
+          const key = `line-${index}`;
+          return line.trim() !== "";
+        })
+        .map((line, index) => {
+          const key = `line-${index}`;
           const proxy = parseProxyLine(line);
           if (!proxy) {
             console.error(`Error parsing proxy from line: ${line}`);
           }
-          return proxy;
+          return { ...proxy, key };
         })
         .filter(Boolean)
-        .map((proxy) => ({
+        .map((proxy, index) => ({
           host: `${proxy.ip}`,
           isActive: false,
           ...proxy,
@@ -385,13 +321,6 @@ function ProxyForm() {
       setProxies((prevState) => [...prevState, ...newProxies]);
     };
     reader.readAsText(file);
-  }
-
-  function handleFileInputChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (file) {
-      handleAddProxiesFromFile(file);
-    }
   }
 
   //TODO: make sure it works on first press of the button because of the map.
@@ -428,58 +357,21 @@ function ProxyForm() {
 
   return (
     <div>
-      <div className="flex mt-4 ml-4">
-        <div>
-          <input
-            id="host-input"
-            type="text"
-            placeholder="IP Address"
-            className="w-40 p-2 text-[#fffed8] bg-dark border rounded-lg"
-            value={host}
-            onChange={(e) => setHost(e.target.value)}
-          />
-        </div>
-        <div>
-          <input
-            id="port-input"
-            type="text"
-            placeholder="Port"
-            className="ml-2 w-20 p-2 text-[#fffed8] bg-dark border rounded-lg"
-            value={port}
-            onChange={(e) => setPort(e.target.value)}
-          />
-        </div>
-        <DefaultButton onClick={handleAddProxy}>Add Proxy</DefaultButton>
-        <div>
-          <DefaultButton onClick={handleShowModal}>
-            Change UserAgent
-          </DefaultButton>
-          <Modal
-            showModal={showModal}
-            selectedUserAgent={selectedUserAgent}
-            userAgent={userAgent}
-            handleCloseModal={handleCloseModal}
-            handleSelectUserAgent={handleSelectUserAgent}
-            handleRemoveUserAgent={handleRemoveUserAgent}
-          />
-        </div>
-      </div>
-      <DefaultButton
-        className="text-red-500 hover:bg-red-500 hover:text-white dark:text-white"
-        onClick={handleRemoveAllProxies}
-      >
-        Remove All Proxies
-      </DefaultButton>
-
-      <DefaultButton onClick={() => inputFileRef.current?.click()}>
-        Add Proxies from File
-      </DefaultButton>
-      <input
-        ref={inputFileRef}
-        type="file"
-        style={{ display: "none" }}
-        onChange={handleFileInputChange}
-        accept=".txt"
+      <ProxyInputForm
+        host={host}
+        port={port}
+        userAgent={userAgent}
+        selectedUserAgent={selectedUserAgent}
+        showModal={showModal}
+        setHost={setHost}
+        setPort={setPort}
+        handleAddProxy={handleAddProxy}
+        handleShowModal={handleShowModal}
+        handleCloseModal={handleCloseModal}
+        handleSelectUserAgent={handleSelectUserAgent}
+        handleRemoveUserAgent={handleRemoveUserAgent}
+        handleAddProxiesFromFile={handleAddProxiesFromFile}
+        handleRemoveAllProxies={handleRemoveAllProxies}
       />
 
       <div>
@@ -488,99 +380,29 @@ function ProxyForm() {
             (currentPage - 1) * proxiesPerPage + relativeIndex;
 
           return (
-            <div
-              key={absoluteIndex}
-              className={`${
-                proxy.isActive
-                  ? "bg-gradient-to-br from-green-400 to-blue-600"
-                  : ""
-              }`}
-            >
-              <div key={absoluteIndex} className="flex flex-wrap items-center">
-                <div>
-                  <p className="ml-2 mb-1 mt-1 text-[#fffed8] text-lg">{`IP${
-                    absoluteIndex + 1
-                  }: ${proxy.host}:${proxy.port}`}</p>
-                </div>
-                {proxy.isActive ? (
-                  <div className="ml-auto">
-                    <DefaultButton
-                      onClick={() => handleDeactivateProxy(absoluteIndex)}
-                    >
-                      Deactivate
-                    </DefaultButton>
-                  </div>
-                ) : (
-                  <div className="ml-auto">
-                    <DefaultButton
-                      onClick={() => handleActivateProxy(absoluteIndex)}
-                    >
-                      Activate
-                    </DefaultButton>
-                  </div>
-                )}
-                <div>
-                  <DefaultButton
-                    onClick={() => handleRemoveProxy(absoluteIndex)}
-                  >
-                    Remove
-                  </DefaultButton>
-                </div>
-                <div>
-                  <DefaultButton
-                    onClick={() => handleHeaderActivation(absoluteIndex)}
-                  >
-                    {proxy.headersActive
-                      ? "Deactivate Headers"
-                      : "Activate Headers"}
-                  </DefaultButton>
-                </div>
-              </div>
-            </div>
+            <ProxiesDisplay
+              absoluteIndex={absoluteIndex}
+              proxy={proxy}
+              handleActivateProxy={handleActivateProxy}
+              handleDeactivateProxy={handleDeactivateProxy}
+              handleRemoveProxy={handleRemoveProxy}
+              handleHeaderActivation={handleHeaderActivation}
+            />
           );
         })}
       </div>
 
-      <div className="flex items-center justify-center mt-4">
-        {currentPage > 1 && (
-          <DefaultButton onClick={handlePreviousPage}>Prev</DefaultButton>
-        )}
-        {proxies.length > proxiesPerPage &&
-          getPageNumbers().map((number, index) => (
-            <div key={index} className="items-center">
-              {number === "..." ? (
-                <span className="mx-2 text-gray-600">...</span>
-              ) : (
-                <a
-                  className="mx-2 text-green-500 cursor-pointer"
-                  onClick={() => handlePageChange(number)}
-                >
-                  {number}
-                </a>
-              )}
-            </div>
-          ))}
-        {currentPage < Math.ceil(proxies.length / proxiesPerPage) && (
-          <React.Fragment>
-            <DefaultButton onClick={handleNextPage}>Next</DefaultButton>
-            <form
-              onSubmit={handleDirectPageSubmit}
-              className="flex items-center"
-            >
-              <input
-                type="number"
-                min="1"
-                max={Math.ceil(proxies.length / proxiesPerPage)}
-                value={directPageInput}
-                onChange={handleDirectPageInputChange}
-                className="mx-2 w-16 h-6 border border-gray-300 rounded text-center"
-                placeholder="Page"
-              />
-              <DefaultButton type="submit">Go</DefaultButton>
-            </form>
-          </React.Fragment>
-        )}
-      </div>
+      <PaginationControls
+        currentPage={currentPage}
+        proxiesPerPage={proxiesPerPage}
+        proxiesLength={proxies.length}
+        directPageInput={directPageInput}
+        handlePreviousPage={handlePreviousPage}
+        handleNextPage={handleNextPage}
+        handlePageChange={handlePageChange}
+        handleDirectPageInputChange={handleDirectPageInputChange}
+        handleDirectPageSubmit={handleDirectPageSubmit}
+      />
     </div>
   );
 }

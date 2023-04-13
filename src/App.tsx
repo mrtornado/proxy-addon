@@ -38,8 +38,8 @@ const TabsWithRouter = () => {
   return (
     <Tabs selectedIndex={selectedIndex} onSelect={handleTabSelect}>
       <TabList>
-        <Tab>Proxy</Tab>
-        <Tab>Login</Tab>
+        <Tab>Proxies List</Tab>
+        <Tab>YPP Members</Tab>
       </TabList>
       <TabPanel>
         <ProxyForm />
