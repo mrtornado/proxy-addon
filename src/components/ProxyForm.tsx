@@ -321,12 +321,37 @@ function ProxyForm() {
     const selected = event.target.value;
     setSelectedUserAgent(selected);
     handleCloseModal();
+
+    // Send message to the background script to activate the content script
+    chrome.runtime.sendMessage(
+      { type: "activateContentScript", userAgent: selected },
+      (response: { success: any }) => {
+        if (response.success) {
+          console.log("Content script activated");
+        } else {
+          console.log("Failed to activate content script");
+        }
+      }
+    );
   };
 
   const handleRemoveUserAgent = () => {
     if (selectedUserAgent) {
       setUserAgent(userAgent.filter((ua) => ua !== selectedUserAgent));
       setSelectedUserAgent("");
+
+      // Send message to the background script to deactivate the content script
+      chrome.runtime.sendMessage(
+        { type: "deactivateContentScript" },
+        (response: { success: any }) => {
+          if (response.success) {
+            console.log("Content script deactivated");
+          } else {
+            console.log("Failed to deactivate content script");
+          }
+        }
+      );
+
       chrome.storage.local.set({
         userAgent: userAgent.filter((ua) => ua !== selectedUserAgent),
       });

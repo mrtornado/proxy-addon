@@ -7,8 +7,7 @@ function useProperties(properties) {
 
   if (activeProxy) {
     const { language, timezone } = activeProxy;
-    const UserAgent =
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36";
+    const UserAgent = properties.ua;
 
     // Call the setupUserAgentHook function with the retrieved values
     setupUserAgentHook(UserAgent, language, timezone);
@@ -25,7 +24,17 @@ chrome.storage.local.get(null, (result) => {
 });
 
 function setupUserAgentHook(UserAgent, language, timezone) {
-  if (typeof UserAgent !== "string" && UserAgent == "") return false;
+  // if (typeof UserAgent !== "string" && UserAgent == "") return false;
+  if (UserAgent === "") return false;
+
+  let os;
+
+  if (UserAgent.indexOf("Windows") !== -1) {
+    os = "Windows 10/11";
+  } else if (UserAgent.indexOf("Mac") !== -1) {
+    os = "Mac OS X";
+  }
+
   function addslashes(str) {
     // Quote string with slashes
     return str.replace(/([\"\'])/g, "\\$1");

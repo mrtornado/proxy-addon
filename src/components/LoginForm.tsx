@@ -182,10 +182,10 @@ const LoginForm = () => {
   return (
     <div className="h-screen items-center bg-gradient-to-br from-gray-700 via-gray-900 to-black">
       {username ? (
-        <div className="text-center text-[#fffed8] mb-4">
+        <div className="pt-16 text-center text-4xl text-[#fffed8] mb-4">
           <p>Welcome, {username}!</p>
           <button
-            className="hover:bg-white hover:text-black bg-transparent text-white border-2 border-white px-4 py-2 rounded"
+            className="text-2xl mt-4 px-4 py-2 rounded hover:bg-white hover:text-black bg-transparent text-white border-2 border-white"
             onClick={() => handleSuccessfulLogin(apiKey, memberKey)}
           >
             Reload Proxy List
@@ -193,16 +193,18 @@ const LoginForm = () => {
           <div className="mt-2">
             <div>
               <button
-                className="hover:bg-white hover:text-black bg-transparent text-white border-2 border-white px-4 py-2 rounded"
+                className="text-2xl mt-4 px-4 py-2 rounded hover:bg-white hover:text-black bg-transparent text-white border-2 border-white"
                 onClick={handleLogout}
               >
                 Logout
               </button>
             </div>
-            <Link className="text-white" to="/proxy">
-              {" "}
-              Go back to Proxies Page{" "}
-            </Link>
+            <div className="mt-8 ">
+              <Link className="text-3xl text-white" to="/proxy">
+                {" "}
+                Go back to Proxies Page{" "}
+              </Link>
+            </div>
           </div>
         </div>
       ) : (
