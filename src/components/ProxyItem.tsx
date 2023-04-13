@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   MdPowerSettingsNew,
   MdDelete,
@@ -6,7 +6,7 @@ import {
 } from "react-icons/md";
 import Tooltip from "./Tooltip";
 
-interface ProxyItemProps {
+export interface ProxyItemProps {
   absoluteIndex: number;
   proxy: {
     isActive: boolean;
@@ -95,16 +95,6 @@ const ProxyItem: React.FC<ProxyItemProps> = ({
             />
           </Tooltip>
         )}
-        {/* <Tooltip message="Toggle Headers Activation">
-          <MdSettingsEthernet
-            onClick={() => handleHeaderActivation(absoluteIndex)}
-            className={`cursor-pointer ${
-              proxy.headersActive
-                ? "mx-4 text-3xl mr-10"
-                : "mx-4  text-green-400 text-3xl mr-10"
-            }`}
-          />
-        </Tooltip> */}
       </div>
     </div>
   </div>

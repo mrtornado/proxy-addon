@@ -1,23 +1,14 @@
 import { useState, useEffect } from "react";
 import ProxyInputForm from "./ProxyInputForm";
 import PaginationControls from "./PaginationControls";
-import ProxiesDisplay from "./ProxiesDisplay";
+import ProxyItem from "./ProxyItem";
 import { useModal } from "../hooks/useModal";
 import { usePagination } from "../hooks/usePagination";
 import { useValidation } from "../hooks/useValidation";
+import Proxy from "../interfaces/proxy";
+import ProxyList from "./ProxyList";
 
 declare const chrome: any;
-
-interface Proxy {
-  host: string;
-  port: string;
-  username?: string | null;
-  password?: string | null;
-  isActive: boolean;
-  headersActive: boolean;
-  language?: string;
-  timezone?: string;
-}
 
 function getProxyCredentials(
   callback: (credentials: {
@@ -433,6 +424,7 @@ function ProxyForm() {
   return (
     <div>
       <ProxyInputForm
+        proxies={proxies}
         host={host}
         port={port}
         userAgent={userAgent}
@@ -455,14 +447,16 @@ function ProxyForm() {
             (currentPage - 1) * proxiesPerPage + relativeIndex;
 
           return (
-            <ProxiesDisplay
-              absoluteIndex={absoluteIndex}
-              proxy={proxy}
-              handleActivateProxy={handleActivateProxy}
-              handleDeactivateProxy={handleDeactivateProxy}
-              handleRemoveProxy={handleRemoveProxy}
-              handleHeaderActivation={handleHeaderActivation}
-            />
+            <div>
+              <ProxyItem
+                absoluteIndex={absoluteIndex}
+                proxy={proxy}
+                handleActivateProxy={handleActivateProxy}
+                handleDeactivateProxy={handleDeactivateProxy}
+                handleRemoveProxy={handleRemoveProxy}
+                handleHeaderActivation={handleHeaderActivation}
+              />
+            </div>
           );
         })}
       </div>

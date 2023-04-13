@@ -1,8 +1,10 @@
 import React from "react";
 import { DefaultButton } from "./Buttons";
 import Modal from "./Modal";
+import Proxy from "../interfaces/proxy";
 
 interface ProxyInputFormProps {
+  proxies: Proxy[];
   host: string;
   port: string;
   userAgent: string[];
@@ -20,6 +22,7 @@ interface ProxyInputFormProps {
 }
 
 const ProxyInputForm: React.FC<ProxyInputFormProps> = ({
+  proxies,
   host,
   port,
   userAgent,
@@ -45,6 +48,10 @@ const ProxyInputForm: React.FC<ProxyInputFormProps> = ({
       handleAddProxiesFromFile(file);
     }
   };
+
+  const data = proxies.map((proxy) => {
+    return { key: proxy.host, value: proxy.host };
+  });
 
   return (
     <div>
