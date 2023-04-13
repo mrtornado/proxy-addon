@@ -193,18 +193,59 @@ function ProxyForm() {
               port: activeProxy.port,
             },
             () => {
-              sendMessage({ type: "deactivateContentScript" }, () => {
+              sendMessage({ type: "deactivateContentScript" }, async () => {
                 // Activate the new proxy
+                try {
+                  if (!language || !timezone || timezone === "UTC") {
+                    const response = await fetch(
+                      `https://ipapi.co/${host}/json/`
+                    ).catch((error) => {
+                      console.error("Fetch error:", error);
+                    });
+
+                    if (response) {
+                      const data = await response.json();
+                      language = data.languages.split(",")[0];
+                      timezone = data.timezone;
+                    }
+                  }
+                } catch (error) {
+                  console.error("Fetch error:", error);
+                  language = "en";
+                  timezone = "UTC";
+                }
                 sendMessage(
                   {
                     type: "activateProxy",
                     host: host,
                     port: port,
+                    language: language,
+                    timezone: timezone,
                     username: username,
                     password: password,
                   },
                   () => {
-                    console.log("Proxy activated:", host, port);
+                    console.log(
+                      `Activated proxy ${host}:${port} with language ${language} and timezone ${timezone}`
+                    );
+                    setProxies((prevProxies) =>
+                      prevProxies.map((proxy, i) => {
+                        if (i === index) {
+                          return {
+                            ...proxy,
+                            isActive: true,
+                            language,
+                            timezone,
+                          };
+                        } else {
+                          return {
+                            ...proxy,
+                            isActive: false,
+                            headersActive: false,
+                          };
+                        }
+                      })
+                    );
                   }
                 );
               });
