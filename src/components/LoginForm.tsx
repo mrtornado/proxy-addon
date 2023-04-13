@@ -212,7 +212,7 @@ const LoginForm = () => {
               <a
                 href="https://www.yourprivateproxy.com/my-account/register"
                 target="blank"
-                className="text-center text-lg text-white"
+                className="text-center text-white"
               >
                 <span className="text-[#fffed8]">Create an account</span>
               </a>{" "}

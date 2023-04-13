@@ -143,7 +143,7 @@ function ProxyForm() {
     chrome.runtime.sendMessage({ type: contentScriptAction });
   }
 
-  //TODO: Fix this function to wait for the fucking deactivate proxies function properly before fetch because that's why it isn't working. If I deactivate proxies manually activating a new proxy always works !!!!
+  //TODO: Fix this function to wait for the fucking deactivate proxies function properly before fetch because that's why it isn't working. If I deactivate proxies manually activating a new proxy always works !!!! I can just add an alert that user has to deactivate the active proxy first .... but that's just trivial and I don't wanna do that!
   async function handleActivateProxy(index: number) {
     let { host, port, language, timezone } = proxies[index];
     const [proxyHost, proxyPort] = host.split(":");
@@ -323,7 +323,6 @@ function ProxyForm() {
     reader.readAsText(file);
   }
 
-  //TODO: make sure it works on first press of the button because of the map.
   useEffect(() => {
     if (typeof chrome !== "undefined") {
       const userAgentList = [
