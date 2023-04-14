@@ -78,6 +78,17 @@ const ProxyInputForm: React.FC<ProxyInputFormProps> = ({
         </div>
         <DefaultButton onClick={handleAddProxy}>Add Proxy</DefaultButton>
         <div>
+          {" "}
+          <DefaultButton
+            className="text-red-500 hover:bg-red-500 hover:text-white dark:text-white"
+            onClick={handleRemoveAllProxies}
+          >
+            Remove All Proxies
+          </DefaultButton>
+        </div>
+      </div>
+      <div className="flex">
+        <div>
           <DefaultButton onClick={handleShowModal}>
             Change UserAgent
           </DefaultButton>
@@ -90,25 +101,20 @@ const ProxyInputForm: React.FC<ProxyInputFormProps> = ({
             handleRemoveUserAgent={handleRemoveUserAgent}
           />
         </div>
+
+        <div>
+          <DefaultButton onClick={() => inputFileRef.current?.click()}>
+            Add Proxies from File
+          </DefaultButton>
+          <input
+            ref={inputFileRef}
+            type="file"
+            style={{ display: "none" }}
+            onChange={handleFileInputChange}
+            accept=".txt"
+          />
+        </div>
       </div>
-
-      <DefaultButton
-        className="text-red-500 hover:bg-red-500 hover:text-white dark:text-white"
-        onClick={handleRemoveAllProxies}
-      >
-        Remove All Proxies
-      </DefaultButton>
-
-      <DefaultButton onClick={() => inputFileRef.current?.click()}>
-        Add Proxies from File
-      </DefaultButton>
-      <input
-        ref={inputFileRef}
-        type="file"
-        style={{ display: "none" }}
-        onChange={handleFileInputChange}
-        accept=".txt"
-      />
     </div>
   );
 };

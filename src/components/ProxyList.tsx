@@ -19,6 +19,8 @@ const ProxyList: React.FC<ProxyListProps> = ({
   handleHeaderActivation,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [proxyAction, setProxyAction] = useState("");
+  const [operationInProgress, setOperationInProgress] = useState(false);
   const proxiesPerPage = 10;
   const filteredProxies = proxies.filter((proxy) =>
     `${proxy.host}:${proxy.port}`.includes(searchTerm)
@@ -35,8 +37,10 @@ const ProxyList: React.FC<ProxyListProps> = ({
   } = usePagination(1, proxiesPerPage, () => filteredProxies.length);
 
   useEffect(() => {
-    resetCurrentPage();
-  }, [searchTerm]);
+    if (proxyAction !== "activate" && proxyAction !== "deactivate") {
+      resetCurrentPage();
+    }
+  }, [searchTerm, proxyAction]);
 
   useEffect(() => {
     if (proxies.length === 0) {
@@ -82,15 +86,27 @@ const ProxyList: React.FC<ProxyListProps> = ({
         <ProxyItem
           key={index}
           absoluteIndex={indexOfFirstProxy + index}
+          originalIndex={proxies.indexOf(proxy)}
           proxy={proxy}
-          handleActivateProxy={(index) => {
-            handleActivateProxy(index, () => setSearchTerm(searchTerm));
+          handleActivateProxy={(index, onSuccess) => {
+            setOperationInProgress(true);
+            handleActivateProxy(index, () => {
+              setSearchTerm(searchTerm);
+              onSuccess && onSuccess();
+              setOperationInProgress(false);
+            });
           }}
-          handleDeactivateProxy={(index) => {
-            handleDeactivateProxy(index, () => setSearchTerm(searchTerm));
+          handleDeactivateProxy={(index, onSuccess) => {
+            setOperationInProgress(true);
+            handleDeactivateProxy(index, () => {
+              setSearchTerm(searchTerm);
+              onSuccess && onSuccess();
+              setOperationInProgress(false);
+            });
           }}
           handleRemoveProxy={handleRemoveProxy}
           handleHeaderActivation={handleHeaderActivation}
+          setProxyAction={setProxyAction} // Add this line
         />
       ))}
       <PaginationControls
