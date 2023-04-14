@@ -101,7 +101,6 @@ function ProxyForm() {
     chrome.runtime.sendMessage({ type: contentScriptAction });
   }
 
-  //TODO: Fix this function to activate the proxy so I don't need refresh when using username and password
   async function handleActivateProxy(
     index: number,
     callback: Function = () => {}
@@ -256,6 +255,12 @@ function ProxyForm() {
               proxy.isActive = false;
             }
           });
+
+          // Update the chrome.storage.local with the newProxies
+          chrome.storage.local.set({ proxies: newProxies }, () => {
+            console.log("Proxies updated in storage after removal.");
+          });
+
           return newProxies;
         });
         chrome.runtime.sendMessage({
@@ -266,7 +271,16 @@ function ProxyForm() {
         chrome.runtime.sendMessage({ type: "deactivateContentScript" });
       });
     } else {
-      setProxies((prevProxies) => prevProxies.filter((_, i) => i !== index));
+      setProxies((prevProxies) => {
+        const newProxies = prevProxies.filter((_, i) => i !== index);
+
+        // Update the chrome.storage.local with the newProxies
+        chrome.storage.local.set({ proxies: newProxies }, () => {
+          console.log("Proxies updated in storage after removal.");
+        });
+
+        return newProxies;
+      });
     }
   }
 

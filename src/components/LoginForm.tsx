@@ -16,68 +16,73 @@ const LoginForm = () => {
   const handleSuccessfulLogin = async (apiKey: string, memberKey: string) => {
     console.log("Calling fetchProxies function");
     await fetchProxies(apiKey, memberKey);
+    await new Promise((resolve) => {
+      chrome.storage.local.get("proxies", (data: { proxies: any[] }) => {
+        if (data.proxies && data.proxies.length > 0) {
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+      });
+    });
     navigate("/proxy");
   };
 
   const fetchProxies = useCallback(
     async (apiKey: any, memberKey: any) => {
-      console.log(
-        "fetchProxies called with apiKey and memberKey:",
-        apiKey,
-        memberKey
-      ); // Add a log here
+      return new Promise(async (resolve) => {
+        const abortController = new AbortController();
+        const { signal } = abortController;
 
-      const abortController = new AbortController();
-      const { signal } = abortController;
+        const proxies = await fetch(
+          "https://ypp-staging.deno.dev/api/members/securedApi/proxies",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              memberKey: memberKey,
+            }),
+            signal,
+          }
+        );
 
-      const proxies = await fetch(
-        "http://localhost:8000/api/members/securedApi/proxies",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            memberKey: memberKey,
-          }),
-          signal,
+        if (proxies.ok) {
+          const proxiesData = await proxies.json();
+
+          const insertProxies = proxiesData.proxies;
+          if (typeof chrome !== "undefined") {
+            chrome.storage.local.get(
+              "proxies",
+              (data: { proxies: never[] }) => {
+                let existingProxies = data.proxies || [];
+
+                // Merge existing and new proxies
+                let mergedProxies = existingProxies.concat(insertProxies);
+
+                // Remove duplicates based on the host property
+                let uniqueProxies = mergedProxies.filter(
+                  (proxy: any, index: number, self: any[]) =>
+                    index ===
+                    self.findIndex(
+                      (otherProxy: any) => otherProxy.host === proxy.host
+                    )
+                );
+
+                chrome.storage.local.set({ proxies: uniqueProxies }, () => {
+                  alert("Proxies have been inserted!");
+                  resolve(true);
+                });
+              }
+            );
+          }
+        } else {
+          console.log("Proxies fetch failed with status:", proxies.status);
+          resolve(false);
         }
-      );
-
-      if (proxies.ok) {
-        const proxiesData = await proxies.json();
-        console.log("Proxies data fetched:", proxiesData); // Add a log here
-
-        const insertProxies = proxiesData.proxies;
-        if (typeof chrome !== "undefined") {
-          // Get the existing proxies array from the storage
-          chrome.storage.local.get("proxies", (data: { proxies: never[] }) => {
-            console.log("Existing proxies:", data.proxies); // Add a log here
-
-            let existingProxies = data.proxies || [];
-
-            // Filter out duplicate proxies
-            let uniqueProxies = insertProxies.filter((newProxy: any) => {
-              return !existingProxies.some(
-                (existingProxy: any) =>
-                  JSON.stringify(newProxy) === JSON.stringify(existingProxy)
-              );
-            });
-
-            // Concatenate the new unique proxies with the existing ones
-            let updatedProxies = existingProxies.concat(uniqueProxies);
-
-            // Set the updated array back into the storage
-            chrome.storage.local.set({ proxies: updatedProxies }, () => {
-              // Alert the message after successfully inserting the proxies
-            });
-            alert("Proxies have been inserted!");
-          });
-        }
-      } else {
-        console.log("Proxies fetch failed with status:", proxies.status); // Add a log here
-      }
+      });
     },
     [navigate]
   );
@@ -145,7 +150,7 @@ const LoginForm = () => {
     try {
       console.log("trying to login");
       const response = await fetch(
-        "http://localhost:8000/api/members/sign-in",
+        "https://ypp-staging.deno.dev/api/members/sign-in",
         {
           method: "POST",
           headers: {

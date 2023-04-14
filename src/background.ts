@@ -99,9 +99,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
 
     case "activateHeaders":
-      chrome.storage.local.get(["proxies"], (result) => {
+      chrome.storage.local.get(["proxies", "ua"], (result) => {
         const activeProxy = result.proxies.find((proxy) => proxy.headersActive);
         if (activeProxy) {
+          const ua = result.ua;
           const modifiedRules = rules.map((rule) => {
             if (rule.id === 1) {
               return {
@@ -125,6 +126,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     {
                       ...rule.action.requestHeaders[0],
                       value: activeProxy.timezone,
+                    },
+                  ],
+                },
+              };
+            } else if (rule.id === 3) {
+              return {
+                ...rule,
+                action: {
+                  ...rule.action,
+                  requestHeaders: [
+                    {
+                      ...rule.action.requestHeaders[0],
+                      value: ua,
                     },
                   ],
                 },

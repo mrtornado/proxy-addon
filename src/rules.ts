@@ -41,6 +41,25 @@ const rules: chrome.declarativeNetRequest.Rule[] = [
       resourceTypes: allResourceTypes,
     },
   },
+  {
+    id: 3,
+    priority: 1,
+    action: {
+      type: chrome.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
+      requestHeaders: [
+        {
+          operation: chrome.declarativeNetRequest.HeaderOperation.SET,
+          header: "user-agent",
+          value:
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+        },
+      ],
+    },
+    condition: {
+      urlFilter: "*",
+      resourceTypes: allResourceTypes,
+    },
+  },
 ];
 
 export default rules;

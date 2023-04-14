@@ -74,7 +74,7 @@ const ProxyList: React.FC<ProxyListProps> = ({
         <div className="flex justify-center">
           <input
             type="text"
-            className="search-input max-w-md mt-2 mb-2 w-40 p-2 text-white bg-yellow-5 border rounded-lg placeholder-black"
+            className="search-input max-w-md mt-2 mb-2 w-40 p-2 text-white bg-dark border rounded-lg placeholder-white"
             placeholder="Search for proxies..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}

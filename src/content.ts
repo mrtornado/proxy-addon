@@ -7,10 +7,17 @@ function useProperties(properties) {
 
   if (activeProxy) {
     const { language, timezone } = activeProxy;
-    const UserAgent = properties.ua;
+    const UserAgent = properties.ua || window.navigator.userAgent;
+    let os;
+
+    if (UserAgent.indexOf("Windows") !== -1) {
+      os = "Win32";
+    } else if (UserAgent.indexOf("Mac") !== -1) {
+      os = "MacIntel";
+    }
 
     // Call the setupUserAgentHook function with the retrieved values
-    setupUserAgentHook(UserAgent, language, timezone);
+    setupUserAgentHook(UserAgent, language, timezone, os);
     // Send a message to the background script to set the timezone
   } else {
     console.warn("No active proxy found");
@@ -23,17 +30,9 @@ chrome.storage.local.get(null, (result) => {
   useProperties(result);
 });
 
-function setupUserAgentHook(UserAgent, language, timezone) {
+function setupUserAgentHook(UserAgent, language, timezone, os) {
   // if (typeof UserAgent !== "string" && UserAgent == "") return false;
   if (UserAgent === "") return false;
-
-  let os;
-
-  if (UserAgent.indexOf("Windows") !== -1) {
-    os = "Windows 10/11";
-  } else if (UserAgent.indexOf("Mac") !== -1) {
-    os = "Mac OS X";
-  }
 
   function addslashes(str) {
     // Quote string with slashes
@@ -41,7 +40,7 @@ function setupUserAgentHook(UserAgent, language, timezone) {
   }
   var actualCode =
     "(" +
-    function (newUserAgent, language, timezone) {
+    function (newUserAgent, language, timezone, os) {
       "use strict";
 
       const OriginalDateTimeFormat = Intl.DateTimeFormat;
@@ -80,7 +79,7 @@ function setupUserAgentHook(UserAgent, language, timezone) {
       Object.defineProperties(navigator, {
         userAgent: rTMPL(newUserAgent),
         appVersion: rTMPL(newUserAgent),
-        platform: rTMPL("Win32"),
+        platform: rTMPL(os),
         productSub: rTMPL("20030107"),
         language: rTMPL(language),
         languages: rTMPL(language),
@@ -185,6 +184,8 @@ function setupUserAgentHook(UserAgent, language, timezone) {
     addslashes(language) +
     '","' +
     addslashes(timezone) +
+    '","' +
+    addslashes(os) +
     '");';
 
   document.documentElement.setAttribute("onreset", actualCode);
