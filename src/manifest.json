@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Your Private Proxy",
-  "version": "0.1",
-  "description": "Manage your proxy settings",
+  "name": "YPP IP Changer",
+  "version": "0.0.1",
+  "description": "Manage your proxy settings and headers",
   "action": {
     "default_popup": "index.html",
     "height": 600,

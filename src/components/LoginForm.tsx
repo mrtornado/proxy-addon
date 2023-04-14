@@ -20,12 +20,13 @@ const LoginForm = () => {
       chrome.storage.local.get("proxies", (data: { proxies: any[] }) => {
         if (data.proxies && data.proxies.length > 0) {
           resolve(true);
+          navigate("/proxy");
         } else {
+          alert("Wrong credentials!");
           resolve(false);
         }
       });
     });
-    navigate("/proxy");
   };
 
   const fetchProxies = useCallback(
@@ -189,6 +190,19 @@ const LoginForm = () => {
       {username ? (
         <div className="pt-16 text-center text-4xl text-[#fffed8] mb-4">
           <p>Welcome, {username}!</p>
+
+          <p className="text-sm text-red-500">
+            Warning! The extension won't import socks5 proxies because the
+            browser doesn't support socks5 authentification, so please login to{" "}
+            <a
+              className="no-underline text-blue-500 on-hover:text-green-500"
+              href="https://www.yourprivateproxy.com/my-account/login"
+              target="_blank"
+            >
+              YourPrivateProxy website
+            </a>{" "}
+            and change your proxies to http protocol on the desired config.
+          </p>
           <button
             className="text-2xl mt-4 px-4 py-2 rounded hover:bg-white hover:text-black bg-transparent text-white border-2 border-white"
             onClick={() => handleSuccessfulLogin(apiKey, memberKey)}

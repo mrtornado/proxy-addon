@@ -12,7 +12,7 @@ chrome.webRequest.onAuthRequired.addListener(
         resolve(data);
       });
     });
-    activeProxy = result.proxies.find((proxy) => proxy.isActive);
+    const activeProxy = result.proxies.find((proxy) => proxy.isActive);
 
     if (activeProxy) {
       const activeProxyPort = parseInt(activeProxy.port, 10);
@@ -22,12 +22,17 @@ chrome.webRequest.onAuthRequired.addListener(
         activeProxy.host === details.challenger.host &&
         activeProxyPort === challengerPort
       ) {
-        const authCredentials = {
-          username: activeProxy.username,
-          password: activeProxy.password,
-        };
+        if (activeProxy.username && activeProxy.password) {
+          const authCredentials = {
+            username: activeProxy.username,
+            password: activeProxy.password,
+          };
 
-        callback({ authCredentials });
+          callback({ authCredentials });
+        } else {
+          // Fallback to the default Chrome prompt
+          callback();
+        }
       } else {
         callback({ cancel: true });
       }
