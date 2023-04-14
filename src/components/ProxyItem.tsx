@@ -14,8 +14,8 @@ export interface ProxyItemProps {
     host: string;
     port: string;
   };
-  handleActivateProxy: (index: number) => void;
-  handleDeactivateProxy: (index: number) => void;
+  handleActivateProxy: (index: number, callback: () => void) => void;
+  handleDeactivateProxy: (index: number, callback: () => void) => void;
   handleRemoveProxy: (index: number) => void;
   handleHeaderActivation: (index: number) => void;
 }
@@ -49,7 +49,7 @@ const ProxyItem: React.FC<ProxyItemProps> = ({
         {proxy.isActive ? (
           <Tooltip message="Deactivate Proxy">
             <MdPowerSettingsNew
-              onClick={() => handleDeactivateProxy(absoluteIndex)}
+              onClick={() => handleDeactivateProxy(absoluteIndex, () => {})} // Pass an empty callback function
               className={`cursor-pointer ${
                 proxy.isActive
                   ? "mx-4 text-green-400 text-3xl"
@@ -60,7 +60,7 @@ const ProxyItem: React.FC<ProxyItemProps> = ({
         ) : (
           <Tooltip message="Activate Proxy">
             <MdPowerSettingsNew
-              onClick={() => handleActivateProxy(absoluteIndex)}
+              onClick={() => handleActivateProxy(absoluteIndex, () => {})} // Pass an empty callback function
               className="mx-4 cursor-pointer text-3xl"
             />
           </Tooltip>

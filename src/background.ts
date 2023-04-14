@@ -6,10 +6,13 @@ let contentScriptIsActive = false;
 let activeProxy = null;
 
 chrome.webRequest.onAuthRequired.addListener(
-  (details, callback) => {
-    chrome.storage.local.get({ proxies: [] }, (result) => {
-      activeProxy = result.proxies.find((proxy) => proxy.isActive);
+  async (details, callback) => {
+    const result = await new Promise((resolve) => {
+      chrome.storage.local.get({ proxies: [] }, (data) => {
+        resolve(data);
+      });
     });
+    activeProxy = result.proxies.find((proxy) => proxy.isActive);
 
     if (activeProxy) {
       const activeProxyPort = parseInt(activeProxy.port, 10);
@@ -182,9 +185,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         .then(() => {
           sendResponse({ success: true });
         })
-        .catch((error) =>
-          console.error("Error deactivating all proxies:", error)
-        );
+        .catch((error) => {
+          console.error("Error deactivating all proxies:", error);
+          sendResponse({ success: false, error: error.message }); // Add an error object to the response
+        });
       return true;
 
     default:

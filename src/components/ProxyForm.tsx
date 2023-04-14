@@ -1,39 +1,18 @@
 import { useState, useEffect } from "react";
 import ProxyInputForm from "./ProxyInputForm";
-import PaginationControls from "./PaginationControls";
-import ProxyItem from "./ProxyItem";
 import { useModal } from "../hooks/useModal";
-import { usePagination } from "../hooks/usePagination";
 import { useValidation } from "../hooks/useValidation";
 import Proxy from "../interfaces/proxy";
 import ProxyList from "./ProxyList";
 
 declare const chrome: any;
 
-function getProxyCredentials(
-  callback: (credentials: {
-    username: string | null;
-    password: string | null;
-  }) => void
-) {
-  chrome.storage.local.get(
-    "proxies",
-    (storage: { proxies: { username: any; password: any } }) => {
-      if (storage.proxies) {
-        const { username, password } = storage.proxies;
-        callback({ username, password });
-      } else {
-        callback({ username: null, password: null });
-      }
-    }
-  );
-}
-
 function ProxyForm() {
   const [proxies, setProxies] = useState<Proxy[]>([]);
   const [language, setLanguage] = useState<string | null>(null);
   const [timezone, setTimezone] = useState<string | null>(null);
   const [userAgent, setUserAgent] = useState<string[]>([]);
+  const [renderKey, setRenderKey] = useState(0);
   const [selectedUserAgent, setSelectedUserAgent] = useState("");
   const { host, port, setHost, setPort, handleAddProxy } = useValidation(
     "",
@@ -42,16 +21,6 @@ function ProxyForm() {
     setProxies
   );
   const { showModal, handleShowModal, handleCloseModal } = useModal();
-  const proxiesPerPage = 10;
-  const {
-    currentPage,
-    directPageInput,
-    handlePageChange,
-    handleNextPage,
-    handlePreviousPage,
-    handleDirectPageInputChange,
-    handleDirectPageSubmit,
-  } = usePagination(1, proxiesPerPage, proxies.length);
 
   useEffect(() => {
     if (typeof chrome !== "undefined") {
@@ -86,13 +55,8 @@ function ProxyForm() {
       // Do something with chrome
       chrome.storage.local.set({ proxies });
     }
+    setRenderKey((prevKey) => prevKey + 1);
   }, [proxies]);
-
-  const indexOfLastProxy = currentPage * proxiesPerPage;
-  const indexOfFirstProxy = indexOfLastProxy - proxiesPerPage;
-
-  // Slice the proxies array to display only the proxies for the current page
-  const currentProxies = proxies.slice(indexOfFirstProxy, indexOfLastProxy);
 
   function handleToggleHeaders(index: number) {
     setProxies((prevProxies) =>
@@ -105,7 +69,10 @@ function ProxyForm() {
     );
   }
 
-  function handleHeaderActivation(index: number) {
+  function handleHeaderActivation(
+    index: number,
+    callback: Function = () => {}
+  ) {
     const proxy = proxies[index];
 
     // Prevent header activation if the proxy is not active
@@ -134,8 +101,11 @@ function ProxyForm() {
     chrome.runtime.sendMessage({ type: contentScriptAction });
   }
 
-  //TODO: Fix this function to wait for the fucking deactivate proxies function properly before fetch because that's why it isn't working. If I deactivate proxies manually activating a new proxy always works !!!! I can just add an alert that user has to deactivate the active proxy first .... but that's just trivial and I don't wanna do that!
-  async function handleActivateProxy(index: number) {
+  //TODO: Fix this function to activate the proxy so I don't need refresh when using username and password
+  async function handleActivateProxy(
+    index: number,
+    callback: Function = () => {}
+  ) {
     let { host, port, language, timezone } = proxies[index];
 
     const getProxyCredentials = (callback: Function) => {
@@ -242,12 +212,13 @@ function ProxyForm() {
               });
             }
           );
+          callback();
         }
       });
     });
   }
 
-  function handleDeactivateProxy(index: number) {
+  function handleDeactivateProxy(index: number, callback: Function) {
     const proxy = proxies[index];
     chrome.runtime.sendMessage(
       { type: "deactivateProxy", host: proxy.host, port: proxy.port },
@@ -270,6 +241,7 @@ function ProxyForm() {
       port: proxy.port,
     });
     chrome.runtime.sendMessage({ type: "deactivateContentScript" });
+    callback();
   }
 
   function handleRemoveProxy(index: number) {
@@ -442,38 +414,20 @@ function ProxyForm() {
       />
 
       <div>
-        {currentProxies.map((proxy, relativeIndex) => {
-          const absoluteIndex =
-            (currentPage - 1) * proxiesPerPage + relativeIndex;
-
-          return (
-            <div>
-              <ProxyItem
-                absoluteIndex={absoluteIndex}
-                proxy={proxy}
-                handleActivateProxy={handleActivateProxy}
-                handleDeactivateProxy={handleDeactivateProxy}
-                handleRemoveProxy={handleRemoveProxy}
-                handleHeaderActivation={handleHeaderActivation}
-              />
-            </div>
-          );
-        })}
+        <ProxyList
+          proxies={proxies}
+          key={renderKey}
+          handleActivateProxy={handleActivateProxy}
+          handleDeactivateProxy={handleDeactivateProxy}
+          handleRemoveProxy={handleRemoveProxy}
+          handleHeaderActivation={handleHeaderActivation}
+        />
       </div>
-
-      <PaginationControls
-        currentPage={currentPage}
-        proxiesPerPage={proxiesPerPage}
-        proxiesLength={proxies.length}
-        directPageInput={directPageInput}
-        handlePreviousPage={handlePreviousPage}
-        handleNextPage={handleNextPage}
-        handlePageChange={handlePageChange}
-        handleDirectPageInputChange={handleDirectPageInputChange}
-        handleDirectPageSubmit={handleDirectPageSubmit}
-      />
     </div>
   );
 }
 
 export default ProxyForm;
+function callback() {
+  throw new Error("Function not implemented.");
+}

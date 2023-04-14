@@ -2,6 +2,7 @@ import React from "react";
 import { DefaultButton } from "./Buttons";
 
 type PaginationControlProps = {
+  filteredProxiesLength: number;
   currentPage: number;
   proxiesPerPage: number;
   proxiesLength: number;
@@ -17,6 +18,7 @@ type PaginationControlProps = {
 
 const PaginationControl: React.FC<PaginationControlProps> = ({
   currentPage,
+  filteredProxiesLength,
   proxiesPerPage,
   proxiesLength,
   directPageInput,
@@ -28,7 +30,7 @@ const PaginationControl: React.FC<PaginationControlProps> = ({
 }) => {
   // Function to calculate the page numbers
   function getPageNumbers() {
-    const totalPages = Math.ceil(proxiesLength / proxiesPerPage);
+    const totalPages = Math.ceil(filteredProxiesLength / proxiesPerPage);
     const pageNumbers = [];
 
     const startPage = Math.max(1, currentPage - 1);
@@ -74,14 +76,14 @@ const PaginationControl: React.FC<PaginationControlProps> = ({
             )}
           </div>
         ))}
-      {currentPage < Math.ceil(proxiesLength / proxiesPerPage) && (
+      {currentPage < Math.ceil(filteredProxiesLength / proxiesPerPage) && (
         <React.Fragment>
           <DefaultButton onClick={handleNextPage}>Next</DefaultButton>
           <form onSubmit={handleDirectPageSubmit} className="flex items-center">
             <input
               type="number"
               min="1"
-              max={Math.ceil(proxiesLength / proxiesPerPage)}
+              max={Math.ceil(filteredProxiesLength / proxiesPerPage)}
               value={directPageInput}
               onChange={handleDirectPageInputChange}
               className="mx-2 w-16 h-6 border border-gray-300 rounded text-center"

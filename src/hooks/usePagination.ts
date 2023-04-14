@@ -3,10 +3,11 @@ import { useState } from "react";
 type UsePagination = (
   initialPage: number,
   itemsPerPage: number,
-  totalItems: number
+  getTotalItems: () => number
 ) => {
   currentPage: number;
   directPageInput: string;
+  resetCurrentPage: () => void;
   handlePageChange: (pageNumber: number) => void;
   handleNextPage: () => void;
   handlePreviousPage: () => void;
@@ -17,15 +18,22 @@ type UsePagination = (
 export const usePagination: UsePagination = (
   initialPage,
   itemsPerPage,
-  totalItems
+  getTotalItems
 ) => {
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [directPageInput, setDirectPageInput] = useState("");
 
   const handlePageChange = (pageNumber: number) => {
-    if (pageNumber >= 1 && pageNumber <= Math.ceil(totalItems / itemsPerPage)) {
+    if (
+      pageNumber >= 1 &&
+      pageNumber <= Math.ceil(getTotalItems() / itemsPerPage)
+    ) {
       setCurrentPage(pageNumber);
     }
+  };
+
+  const resetCurrentPage = () => {
+    setCurrentPage(1);
   };
 
   const handleNextPage = () => {
@@ -43,7 +51,10 @@ export const usePagination: UsePagination = (
   const handleDirectPageSubmit = (event: any) => {
     event.preventDefault();
     const pageNumber = parseInt(directPageInput);
-    if (pageNumber >= 1 && pageNumber <= Math.ceil(totalItems / itemsPerPage)) {
+    if (
+      pageNumber >= 1 &&
+      pageNumber <= Math.ceil(getTotalItems() / itemsPerPage)
+    ) {
       setCurrentPage(pageNumber);
     }
     setDirectPageInput("");
@@ -51,6 +62,7 @@ export const usePagination: UsePagination = (
 
   return {
     currentPage,
+    resetCurrentPage,
     directPageInput,
     handlePageChange,
     handleNextPage,

@@ -12,8 +12,7 @@ function App() {
   return (
     <Router>
       <div className="App">
-        <div className="absolute top-0 left-0 right-0 h-screen text-white">
-          <h1 className="flex justify-center"> YPP IP Changer</h1>
+        <div className="mt-4 text-white">
           <TabsWithRouter />
         </div>
       </div>
@@ -40,6 +39,19 @@ const TabsWithRouter = () => {
       <TabList>
         <Tab>Proxies List</Tab>
         <Tab>YPP Members</Tab>
+        <span className="ml-50  text-2xl">
+          {" "}
+          <a
+            className="text-white hover:text-green-500 no-underline"
+            href="https://www.yourprivateproxy.com"
+            target="_blank"
+          >
+            {" "}
+            <span className="text-red-500">YPP</span>{" "}
+            <span className="text-yellow-500">IP</span>{" "}
+            <span className="text-blue-500">Changer</span>
+          </a>
+        </span>
       </TabList>
       <TabPanel>
         <ProxyForm />
