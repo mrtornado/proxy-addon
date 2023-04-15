@@ -31,14 +31,6 @@ const ProxyItem: React.FC<ProxyItemProps> = ({
   handleRemoveProxy,
   handleHeaderActivation,
 }) => {
-  const handleActivateClick = () => {
-    handleActivateProxy(absoluteIndex, () => {});
-  };
-
-  const handleDeactivateClick = () => {
-    handleDeactivateProxy(absoluteIndex, () => {});
-  };
-
   return (
     <div
       key={absoluteIndex}

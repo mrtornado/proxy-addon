@@ -47,7 +47,6 @@ chrome.webRequest.onAuthRequired.addListener(
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   switch (request.type) {
     case "activateProxy":
-      console.log("activateProxy");
       chrome.proxy.settings.set(
         {
           value: {
@@ -63,13 +62,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           scope: "regular",
         },
         () => {
-          console.log("proxy set");
           chrome.storage.local.get({ proxies: [] }, (result) => {
             let proxies = result.proxies;
-            console.log(request);
             proxies.push({ host: request.host, port: request.port });
             chrome.storage.local.set({ proxies: proxies }, () => {
-              console.log("proxy saved");
               sendResponse({ success: true }); // Add a response object
             });
           });
@@ -78,25 +74,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
 
     case "deactivateProxy":
-      console.log("deactivateProxy");
       chrome.proxy.settings.clear(
         {
           scope: "regular",
         },
         () => {
-          console.log("proxy settings cleared");
           chrome.storage.local.get({ proxies: [] }, async (result) => {
-            console.log("fetched proxies");
             let proxies = result.proxies;
             proxies = proxies.filter(
               (proxy) =>
                 proxy.host !== request.host || proxy.port !== request.port
             );
-            console.log("filtered proxies");
             await new Promise((resolve) => {
               chrome.storage.local.set({ proxies }, resolve);
             });
-            console.log("proxies saved");
             sendResponse({ success: true });
           });
         }
@@ -151,7 +142,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             }
             return rule;
           });
-          console.log("Activating headers:", modifiedRules);
           chrome.declarativeNetRequest.updateDynamicRules(
             {
               addRules: modifiedRules,
@@ -165,10 +155,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
 
     case "deactivateHeaders":
-      console.log(
-        "Deactivating headers:",
-        rules.map((rule) => rule.id)
-      );
       chrome.declarativeNetRequest.updateDynamicRules(
         {
           removeRuleIds: rules.map((rule) => rule.id),
@@ -181,7 +167,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     case "activateContentScript":
       // Activate the content script
-      console.log("Activating content script:", request);
       contentScriptIsActive = true;
       chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
         chrome.scripting.executeScript({
@@ -194,7 +179,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     case "deactivateContentScript":
       // Deactivate the content script
-      console.log("Deactivating content script:", request);
       contentScriptIsActive = false;
       sendResponse({ success: true });
       break;
@@ -231,13 +215,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 function deactivateAllProxies() {
   return new Promise((resolve, reject) => {
-    console.log("Deactivating all proxies");
     chrome.proxy.settings.clear({ scope: "regular" }, () => {
       if (chrome.runtime.lastError) {
-        console.log("Error while deactivating all proxies");
         reject(chrome.runtime.lastError);
       } else {
-        console.log("All proxies deactivated");
         resolve();
       }
     });

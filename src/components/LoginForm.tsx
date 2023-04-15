@@ -14,7 +14,6 @@ const LoginForm = () => {
   const [memberKey, setMemberKey] = useState("");
 
   const handleSuccessfulLogin = async (apiKey: string, memberKey: string) => {
-    console.log("Calling fetchProxies function");
     await fetchProxies(apiKey, memberKey);
     await new Promise((resolve) => {
       chrome.storage.local.get("proxies", (data: { proxies: any[] }) => {
@@ -36,7 +35,7 @@ const LoginForm = () => {
         const { signal } = abortController;
 
         const proxies = await fetch(
-          "https://ypp-staging.deno.dev/api/members/securedApi/proxies",
+          "https://ypp.deno.dev/api/members/securedApi/proxies",
           {
             method: "POST",
             headers: {
@@ -72,15 +71,21 @@ const LoginForm = () => {
                     )
                 );
 
-                chrome.storage.local.set({ proxies: uniqueProxies }, () => {
-                  alert("Proxies have been inserted!");
-                  resolve(true);
-                });
+                if (uniqueProxies.length > 0) {
+                  chrome.storage.local.set({ proxies: uniqueProxies }, () => {
+                    alert("Proxies have been inserted!");
+                    resolve(true);
+                  });
+                } else {
+                  alert(
+                    "No proxies were inserted! because you don't have any proxies with us, or all your proxies are socks5"
+                  );
+                  navigate("/proxies");
+                }
               }
             );
           }
         } else {
-          console.log("Proxies fetch failed with status:", proxies.status);
           resolve(false);
         }
       });
@@ -149,20 +154,16 @@ const LoginForm = () => {
 
   const handleSubmit = async () => {
     try {
-      console.log("trying to login");
-      const response = await fetch(
-        "https://ypp-staging.deno.dev/api/members/sign-in",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: email,
-            password: password,
-          }),
-        }
-      );
+      const response = await fetch("https://ypp.deno.dev/api/members/sign-in", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email,
+          password: password,
+        }),
+      });
 
       const data = await response.json();
       if (typeof chrome !== "undefined") {
@@ -173,7 +174,6 @@ const LoginForm = () => {
         const apiKey = data.apiKey;
         // Handle successful login
         handleSuccessfulLogin(data.apiKey, data.memberKey);
-        console.log("Login successful:", data);
       } else {
         // Handle unsuccessful login
         setError(data.error);
@@ -233,13 +233,18 @@ const LoginForm = () => {
               <a
                 href="https://www.yourprivateproxy.com/my-account/register"
                 target="blank"
-                className="text-center text-white"
+                className="text-center text-green-500"
               >
-                <span className="text-[#fffed8]">Create an account</span>
+                <span className="text-green-500">Create an account</span>
               </a>{" "}
-              with YourPrivateProxy if you don't have one. <br />
-              <span className="text-green">
-                It's free! No credit card required.
+              with YourPrivateProxy if you don't have one, and{" "}
+              <span className="text-yellow-500">
+                you will be able to import multiple proxies from file.
+              </span>{" "}
+              <br />
+              <span className="text-blue-500">
+                It's free!{" "}
+                <span className="text-red-500">No credit card required.</span>
               </span>{" "}
               <br />
               Once you do that you will be able to apply for a free trial proxy

@@ -39,7 +39,7 @@ const TabsWithRouter = () => {
       <TabList>
         <Tab>Proxies List</Tab>
         <Tab>YPP Members</Tab>
-        <span className="ml-50  text-2xl">
+        <span className="ml-30  text-2xl">
           {" "}
           <a
             className="text-white hover:text-green-500 no-underline"
@@ -48,7 +48,7 @@ const TabsWithRouter = () => {
           >
             {" "}
             <span className="text-red-500">YPP</span>{" "}
-            <span className="text-yellow-500">IP</span>{" "}
+            <span className="text-yellow-500">SwiftProxy</span>{" "}
             <span className="text-blue-500">Changer</span>
           </a>
         </span>

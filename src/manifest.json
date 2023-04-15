@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "YPP IP Changer",
+  "name": "YPP SwiftProxy Changer",
   "version": "0.0.1",
-  "description": "Manage your proxy settings and headers",
+  "description": "YPP SwiftProxy Changer, the ultimate extension. You can seamlessly switch between multiple proxy servers.",
   "action": {
     "default_popup": "index.html",
     "height": 600,
@@ -15,7 +15,6 @@
     }
   },
   "permissions": [
-    "debugger",
     "background",
     "activeTab",
     "scripting",

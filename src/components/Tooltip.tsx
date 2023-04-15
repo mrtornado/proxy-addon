@@ -25,7 +25,7 @@ export default function Tooltip({ message, children }: any) {
     <div className="group relative flex">
       {clonedChildren}
       <span
-        className={`min-w-xs absolute right-4 bottom-10 transition-all duration-300 rounded bg-green-900 p-2 text-xl text-white ${
+        className={`min-w-xs absolute right-2 bottom-10 transition-all duration-300 rounded bg-green-900 p-2 text-xl text-white ${
           visible ? "scale-100 opacity-100" : "scale-0 opacity-0"
         }`}
       >

@@ -2,6 +2,8 @@ import React from "react";
 import { DefaultButton } from "./Buttons";
 import Modal from "./Modal";
 import Proxy from "../interfaces/proxy";
+import Tooltip from "./Tooltip";
+import useLoggedIn from "../hooks/useLoggedIn";
 
 interface ProxyInputFormProps {
   proxies: Proxy[];
@@ -39,6 +41,8 @@ const ProxyInputForm: React.FC<ProxyInputFormProps> = ({
   handleRemoveAllProxies,
 }) => {
   const inputFileRef = React.useRef<HTMLInputElement>(null);
+  const loggedIn = useLoggedIn();
+  console.log(loggedIn);
 
   const handleFileInputChange = (
     event: React.ChangeEvent<HTMLInputElement>
@@ -76,7 +80,9 @@ const ProxyInputForm: React.FC<ProxyInputFormProps> = ({
             onChange={(e) => setPort(e.target.value)}
           />
         </div>
-        <DefaultButton onClick={handleAddProxy}>Add Proxy</DefaultButton>
+        <Tooltip message="Only HTTP or HTTPS proxy">
+          <DefaultButton onClick={handleAddProxy}>Add Proxy</DefaultButton>
+        </Tooltip>
         <div>
           {" "}
           <DefaultButton
@@ -102,18 +108,22 @@ const ProxyInputForm: React.FC<ProxyInputFormProps> = ({
           />
         </div>
 
-        <div>
-          <DefaultButton onClick={() => inputFileRef.current?.click()}>
-            Add Proxies from File
-          </DefaultButton>
-          <input
-            ref={inputFileRef}
-            type="file"
-            style={{ display: "none" }}
-            onChange={handleFileInputChange}
-            accept=".txt"
-          />
-        </div>
+        {loggedIn && (
+          <div>
+            <Tooltip message="Import Proxies format IP:PORT or IP:PORT:USERNAME:PASSWORD">
+              <DefaultButton onClick={() => inputFileRef.current?.click()}>
+                Add Proxies from File
+              </DefaultButton>
+              <input
+                ref={inputFileRef}
+                type="file"
+                style={{ display: "none" }}
+                onChange={handleFileInputChange}
+                accept=".txt"
+              />
+            </Tooltip>
+          </div>
+        )}
       </div>
     </div>
   );
