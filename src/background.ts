@@ -99,6 +99,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const activeProxy = result.proxies.find((proxy) => proxy.headersActive);
         if (activeProxy) {
           const ua = result.ua;
+          const sec = result.ua.includes("Mac") ? "macOS" : "Windows";
+          console.log(sec);
           const modifiedRules = rules.map((rule) => {
             if (rule.id === 1) {
               return {
@@ -134,7 +136,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                   requestHeaders: [
                     {
                       ...rule.action.requestHeaders[0],
-                      value: ua,
+                      value: ua || window.navigator.userAgent,
+                    },
+                  ],
+                },
+              };
+            } else if (rule.id === 4) {
+              return {
+                ...rule,
+                action: {
+                  ...rule.action,
+                  requestHeaders: [
+                    {
+                      ...rule.action.requestHeaders[0],
+                      value: sec || "macOS",
                     },
                   ],
                 },

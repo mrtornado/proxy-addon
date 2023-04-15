@@ -60,6 +60,24 @@ const rules: chrome.declarativeNetRequest.Rule[] = [
       resourceTypes: allResourceTypes,
     },
   },
+  {
+    id: 4,
+    priority: 1,
+    action: {
+      type: chrome.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
+      requestHeaders: [
+        {
+          operation: chrome.declarativeNetRequest.HeaderOperation.SET,
+          header: "sec-ch-ua-platform",
+          value: "macOS",
+        },
+      ],
+    },
+    condition: {
+      urlFilter: "*",
+      resourceTypes: allResourceTypes,
+    },
+  },
 ];
 
 export default rules;
