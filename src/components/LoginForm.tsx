@@ -322,7 +322,7 @@ const LoginForm = () => {
               <div className="mt-8 ">
                 <Link className="text-3xl text-white" to="/proxy">
                   {" "}
-                  Go back to Proxies Page{" "}
+                  Go back to Proxies List Page{" "}
                 </Link>
               </div>
             </div>
