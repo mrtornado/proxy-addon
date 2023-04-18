@@ -4,6 +4,7 @@ import Modal from "./Modal";
 import Proxy from "../interfaces/proxy";
 import Tooltip from "./Tooltip";
 import useLoggedIn from "../hooks/useLoggedIn";
+import { Link } from "react-router-dom";
 
 interface ProxyInputFormProps {
   proxies: Proxy[];
@@ -98,6 +99,14 @@ const ProxyInputForm: React.FC<ProxyInputFormProps> = ({
           <DefaultButton onClick={handleShowModal}>
             Change UserAgent
           </DefaultButton>
+          {loggedIn ? (
+            ""
+          ) : (
+            <Link className="text-green-500 text-xl" to="/signup">
+              Create YPP account to load multiple proxies from file
+            </Link>
+          )}
+
           <Modal
             showModal={showModal}
             selectedUserAgent={selectedUserAgent}

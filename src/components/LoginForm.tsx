@@ -20,10 +20,6 @@ const LoginForm = () => {
   const apiUrl = import.meta.env.VITE_API_URL;
   const activated = useActivated();
 
-  const handleSignup = () => {
-    navigate("/signup");
-  };
-
   const handleTrial = () => {
     navigate("/trial");
   };
@@ -332,22 +328,15 @@ const LoginForm = () => {
         <div className="flex justify-center">
           <div className="w-xl">
             <div className="text-xl ml-4 mr-4 mt-10 mb-10">
-              <a onClick={handleSignup} className="text-center text-green-500">
+              <Link to="/signup" className="text-center text-green-500">
                 <span className="cursor-pointer text-2xl underline text-green-500">
                   Create an account
                 </span>
-              </a>{" "}
-              with YourPrivateProxy if you don't have one, and{" "}
-              <span className="text-yellow-500">
-                you will be able to import multiple proxies from file.
-              </span>{" "}
+              </Link>{" "}
+              with YourPrivateProxy if you don't have one.
               <br />
-              <span className="text-blue-500">
-                It's free!{" "}
-                <span className="text-red-500">No credit card required.</span>
-              </span>{" "}
-              <br />
-              Once you do that you will be able to apply for a free trial proxy.
+              <span className="text-blue-500">It's free! </span> Login and apply
+              for a free proxy trial.
             </div>
             {error && (
               <p className="text-2xl text-red-600 text-center">{error}</p>
@@ -388,13 +377,17 @@ const LoginForm = () => {
                 </button>
               </div>
             </form>
-            <div className="mt-4 flex justify-center">
-              <button
-                onClick={handleSignup}
-                className="cursor-pointer rounded-full text-2xl w-md hover:bg-white hover:text-black bg-transparent text-white border-2 border-white px-4 py-2 rounded"
+            <div className="mt-2 flex flex-col justify-center">
+              <Link to="signup" className="text-2xl text-center text-green-500">
+                Create account
+              </Link>
+              <a
+                className="text-2xl text-center text-green-500"
+                target="_blank"
+                href="https://ypp.deno.dev/forgot"
               >
-                Create Account
-              </button>
+                Forgot Password?
+              </a>
             </div>
           </div>
         </div>
