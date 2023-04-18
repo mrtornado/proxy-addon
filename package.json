@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "build-extension": "yarn build",
+    "build-dev": "tsc && vite build --mode development",
+    "build-prod": "tsc && vite build --mode production",
     "preview": "vite preview"
   },
   "dependencies": {

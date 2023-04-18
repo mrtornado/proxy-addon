@@ -1,19 +1,34 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useActivated } from "../hooks/useLoggedIn";
 
 declare const chrome: any;
 
 const LoginForm = () => {
   const passwordInputRef = useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = useState(true);
+  const [reloading, setReloading] = useState(false);
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
+  const [trial, setTrial] = useState(false);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [memberKey, setMemberKey] = useState("");
+  const apiUrl = import.meta.env.VITE_API_URL;
+  const activated = useActivated();
+
+  const handleSignup = () => {
+    navigate("/signup");
+  };
+
+  const handleTrial = () => {
+    navigate("/trial");
+  };
 
   const handleSuccessfulLogin = async (apiKey: string, memberKey: string) => {
+    setReloading(true);
     await fetchProxies(apiKey, memberKey);
     await new Promise((resolve) => {
       chrome.storage.local.get("proxies", (data: { proxies: any[] }) => {
@@ -21,11 +36,15 @@ const LoginForm = () => {
           resolve(true);
           navigate("/proxy");
         } else {
-          alert("Wrong credentials!");
-          resolve(false);
+          resolve(true);
+          alert(
+            "You have NO PROXIES, sign up for a trial if you didn't already. If you did just get some proxies"
+          );
+          navigate("/proxy");
         }
       });
     });
+    setReloading(false);
   };
 
   const fetchProxies = useCallback(
@@ -35,7 +54,7 @@ const LoginForm = () => {
         const { signal } = abortController;
 
         const proxies = await fetch(
-          "https://ypp.deno.dev/api/members/securedApi/proxies",
+          `${apiUrl}/api/members/securedApi/proxies`,
           {
             method: "POST",
             headers: {
@@ -97,12 +116,22 @@ const LoginForm = () => {
     const checkLoginStatus = async () => {
       if (typeof chrome !== "undefined") {
         const user = await new Promise<{
-          user: { apiKey: any; memberKey: any; username: string };
+          user: {
+            apiKey: any;
+            memberKey: any;
+            username: string;
+            trial: boolean;
+          };
         }>((resolve) => {
           chrome.storage.local.get(
             "user",
             (data: {
-              user: { apiKey: any; memberKey: any; username: string };
+              user: {
+                apiKey: any;
+                memberKey: any;
+                username: string;
+                trial: boolean;
+              };
             }) => {
               resolve(data);
             }
@@ -113,9 +142,15 @@ const LoginForm = () => {
           setUsername(user.user.username);
           setApiKey(user.user.apiKey);
           setMemberKey(user.user.memberKey);
+          setTrial(user.user.trial);
+          setLoading(false);
           // Comment out the next line to stop automatically fetching proxies
           // handleSuccessfulLogin(user.user.apiKey, user.user.memberKey);
+        } else {
+          setLoading(false);
         }
+      } else {
+        setLoading(false);
       }
     };
 
@@ -154,7 +189,7 @@ const LoginForm = () => {
 
   const handleSubmit = async () => {
     try {
-      const response = await fetch("https://ypp.deno.dev/api/members/sign-in", {
+      const response = await fetch(`${apiUrl}/api/members/sign-in`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -166,11 +201,15 @@ const LoginForm = () => {
       });
 
       const data = await response.json();
+      console.log(data);
       if (typeof chrome !== "undefined") {
+        if (data.trial) {
+          setTrial(true);
+        }
         chrome.storage.local.set({ user: data });
       }
 
-      if (response.ok) {
+      if (!data.error) {
         const apiKey = data.apiKey;
         // Handle successful login
         handleSuccessfulLogin(data.apiKey, data.memberKey);
@@ -188,29 +227,23 @@ const LoginForm = () => {
   return (
     <div className="h-screen items-center bg-gradient-to-br from-gray-700 via-gray-900 to-black">
       {username ? (
-        <div className="pt-16 text-center text-4xl text-[#fffed8] mb-4">
-          <p>Welcome, {username}!</p>
-
-          <p className="text-sm text-red-500">
-            Warning! The extension won't import socks5 proxies because the
-            browser doesn't support socks5 authentification, so please login to{" "}
-            <a
-              className="no-underline text-blue-500 on-hover:text-green-500"
-              href="https://www.yourprivateproxy.com/my-account/login"
-              target="_blank"
-            >
-              YourPrivateProxy website
-            </a>{" "}
-            and change your proxies to http protocol on the desired config.
-          </p>
-          <button
-            className="text-2xl mt-4 px-4 py-2 rounded hover:bg-white hover:text-black bg-transparent text-white border-2 border-white"
-            onClick={() => handleSuccessfulLogin(apiKey, memberKey)}
-          >
-            Reload Proxy List
-          </button>
-          <div className="mt-2">
-            <div>
+        activated === false ? (
+          <div className="flex flex-col justify-center">
+            <div className="pt-16 text-center text-3xl text-red-600">
+              <p className="text-center">
+                Your account has not been{" "}
+                <span className="text-green-500">activated</span> yet.
+              </p>
+              <p className="text-center">
+                If you haven't received the activation email, be sure to check
+                your junk or spam folder.
+              </p>
+              <p className="text-yellow-500">
+                If your account has been activated already, you still need to
+                log out and then log back in to update the activation status.{" "}
+              </p>
+            </div>
+            <div className="flex justify-center">
               <button
                 className="text-2xl mt-4 px-4 py-2 rounded hover:bg-white hover:text-black bg-transparent text-white border-2 border-white"
                 onClick={handleLogout}
@@ -218,24 +251,85 @@ const LoginForm = () => {
                 Logout
               </button>
             </div>
-            <div className="mt-8 ">
-              <Link className="text-3xl text-white" to="/proxy">
-                {" "}
-                Go back to Proxies Page{" "}
-              </Link>
+          </div>
+        ) : (
+          <div className=" pt-2 text-center text-4xl text-[#fffed8] mb-2">
+            <p>Welcome, {username}!</p>
+            <div className="flex justify-center">
+              {loading ? (
+                <div className="text-center text-2xl text-white">
+                  Loading...
+                </div>
+              ) : (
+                !trial && (
+                  <div className="border-white rounded-4 ">
+                    <a
+                      onClick={handleTrial}
+                      className="text-2xl mt-4 px-4 py-2 rounded hover:bg-white hover:text-black bg-transparent text-white border-2 border-white"
+                    >
+                      Apply For a Free Proxy Trial
+                    </a>
+                  </div>
+                )
+              )}
+
+              <div className=" border-white rounded-4 ">
+                <a
+                  className="ml-8 text-2xl mt-4 px-4 py-2 rounded hover:bg-white hover:text-black bg-transparent text-white border-2 border-white"
+                  href="https://www.yourprivateproxy.com/buy-private-proxies"
+                  target="_blank"
+                >
+                  Get More Proxies
+                </a>
+              </div>
+            </div>
+
+            <p className="text-sm text-red-500">
+              Warning! The extension won't import socks5 proxies because the
+              browser doesn't support socks5 authentification, so please login
+              to{" "}
+              <a
+                className="no-underline text-blue-500 on-hover:text-green-500"
+                href="https://www.yourprivateproxy.com/my-account/login"
+                target="_blank"
+              >
+                YourPrivateProxy website
+              </a>{" "}
+              and change your proxies to http protocol on the desired config.
+            </p>
+            <button
+              className="text-2xl mt-4 px-4 py-2 rounded hover:bg-white hover:text-black bg-transparent text-white border-2 border-white"
+              onClick={() => handleSuccessfulLogin(apiKey, memberKey)}
+              disabled={reloading}
+            >
+              {reloading ? "Loading..." : "Reload Proxy List"}
+            </button>
+            <div className="mt-2">
+              <div>
+                <button
+                  className="text-2xl mt-4 px-4 py-2 rounded hover:bg-white hover:text-black bg-transparent text-white border-2 border-white"
+                  onClick={handleLogout}
+                >
+                  Logout
+                </button>
+              </div>
+              <div className="mt-8 ">
+                <Link className="text-3xl text-white" to="/proxy">
+                  {" "}
+                  Go back to Proxies Page{" "}
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
+        )
       ) : (
         <div className="flex justify-center">
           <div className="w-xl">
             <div className="text-xl ml-4 mr-4 mt-10 mb-10">
-              <a
-                href="https://www.yourprivateproxy.com/my-account/register"
-                target="blank"
-                className="text-center text-green-500"
-              >
-                <span className="text-green-500">Create an account</span>
+              <a onClick={handleSignup} className="text-center text-green-500">
+                <span className="cursor-pointer text-2xl underline text-green-500">
+                  Create an account
+                </span>
               </a>{" "}
               with YourPrivateProxy if you don't have one, and{" "}
               <span className="text-yellow-500">
@@ -247,8 +341,7 @@ const LoginForm = () => {
                 <span className="text-red-500">No credit card required.</span>
               </span>{" "}
               <br />
-              Once you do that you will be able to apply for a free trial proxy
-              and use this app to the full of it's capibilities.
+              Once you do that you will be able to apply for a free trial proxy.
             </div>
             {error && (
               <p className="text-2xl text-red-600 text-center">{error}</p>
@@ -282,7 +375,15 @@ const LoginForm = () => {
               </div>
               <div className="mt-4 flex justify-center">
                 <button className=" rounded-full text-2xl w-md hover:bg-white hover:text-black bg-transparent text-white border-2 border-white px-4 py-2 rounded">
-                  Submit
+                  Login
+                </button>
+              </div>
+              <div className="mt-4 flex justify-center">
+                <button
+                  onClick={handleSignup}
+                  className=" rounded-full text-2xl w-md hover:bg-white hover:text-black bg-transparent text-white border-2 border-white px-4 py-2 rounded"
+                >
+                  Create Account
                 </button>
               </div>
             </form>

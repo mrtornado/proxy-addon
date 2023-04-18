@@ -5,8 +5,6 @@
   "description": "YPP SwiftProxy Changer, the ultimate extension. You can seamlessly switch between multiple proxy servers.",
   "action": {
     "default_popup": "index.html",
-    "height": 600,
-    "width": 400,
     "default_icon": {
       "16": "/assets/favicon16.png",
       "32": "/assets/favicon32.png",
@@ -15,7 +13,6 @@
     }
   },
   "permissions": [
-    "debugger",
     "background",
     "activeTab",
     "scripting",
