@@ -8,6 +8,7 @@ const LoginForm = () => {
   const passwordInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [reloading, setReloading] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -94,12 +95,14 @@ const LoginForm = () => {
                   chrome.storage.local.set({ proxies: uniqueProxies }, () => {
                     alert("Proxies have been inserted!");
                     resolve(true);
+                    setLoginLoading(false);
                   });
                 } else {
                   alert(
                     "No proxies were inserted! because you don't have any proxies with us, or all your proxies are socks5"
                   );
                   navigate("/proxies");
+                  setLoginLoading(false);
                 }
               }
             );
@@ -177,6 +180,7 @@ const LoginForm = () => {
           handleSubmit();
       }
     }
+    setLoginLoading(true);
     setError("");
   };
 
@@ -216,11 +220,13 @@ const LoginForm = () => {
       } else {
         // Handle unsuccessful login
         setError(data.error);
+        setLoginLoading(false);
       }
     } catch (error) {
       // Handle network errors
       console.error("Error:", error);
       setError("An error occurred. Please try again.");
+      setLoginLoading(false);
     }
   };
 
@@ -245,7 +251,7 @@ const LoginForm = () => {
             </div>
             <div className="flex justify-center">
               <button
-                className="text-2xl mt-4 px-4 py-2 rounded hover:bg-white hover:text-black bg-transparent text-white border-2 border-white"
+                className="cursor-pointer text-2xl mt-4 px-4 py-2 rounded hover:bg-white hover:text-black bg-transparent text-white border-2 border-white"
                 onClick={handleLogout}
               >
                 Logout
@@ -262,10 +268,10 @@ const LoginForm = () => {
                 </div>
               ) : (
                 !trial && (
-                  <div className="border-white rounded-4 ">
+                  <div className="cursor-pointer border-white rounded-4 ">
                     <a
                       onClick={handleTrial}
-                      className="text-2xl mt-4 px-4 py-2 rounded hover:bg-white hover:text-black bg-transparent text-white border-2 border-white"
+                      className="border-solid border-white text-2xl mt-4 px-4 py-2 rounded hover:bg-white hover:text-black bg-transparent text-white border-2 border-white"
                     >
                       Apply For a Free Proxy Trial
                     </a>
@@ -298,7 +304,7 @@ const LoginForm = () => {
               and change your proxies to http protocol on the desired config.
             </p>
             <button
-              className="text-2xl mt-4 px-4 py-2 rounded hover:bg-white hover:text-black bg-transparent text-white border-2 border-white"
+              className="cursor-pointer text-2xl mt-4 px-4 py-2 rounded hover:bg-white hover:text-black bg-transparent text-white border-2 border-white"
               onClick={() => handleSuccessfulLogin(apiKey, memberKey)}
               disabled={reloading}
             >
@@ -307,7 +313,7 @@ const LoginForm = () => {
             <div className="mt-2">
               <div>
                 <button
-                  className="text-2xl mt-4 px-4 py-2 rounded hover:bg-white hover:text-black bg-transparent text-white border-2 border-white"
+                  className="cursor-pointer text-2xl mt-4 px-4 py-2 rounded hover:bg-white hover:text-black bg-transparent text-white border-2 border-white"
                   onClick={handleLogout}
                 >
                   Logout
@@ -374,19 +380,22 @@ const LoginForm = () => {
                 />
               </div>
               <div className="mt-4 flex justify-center">
-                <button className=" rounded-full text-2xl w-md hover:bg-white hover:text-black bg-transparent text-white border-2 border-white px-4 py-2 rounded">
-                  Login
-                </button>
-              </div>
-              <div className="mt-4 flex justify-center">
                 <button
-                  onClick={handleSignup}
-                  className=" rounded-full text-2xl w-md hover:bg-white hover:text-black bg-transparent text-white border-2 border-white px-4 py-2 rounded"
+                  className="cursor-pointer rounded-full text-2xl w-md hover:bg-white hover:text-black bg-transparent text-white border-2 border-white px-4 py-2 rounded"
+                  disabled={loginLoading}
                 >
-                  Create Account
+                  {loginLoading ? "Loading..." : "Login"}
                 </button>
               </div>
             </form>
+            <div className="mt-4 flex justify-center">
+              <button
+                onClick={handleSignup}
+                className="cursor-pointer rounded-full text-2xl w-md hover:bg-white hover:text-black bg-transparent text-white border-2 border-white px-4 py-2 rounded"
+              >
+                Create Account
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -147,11 +147,19 @@ const SignupForm = () => {
           />
         </div>
         <div className="mt-4 flex justify-center">
-          <button className="rounded-full text-2xl w-md hover:bg-white hover:text-black bg-transparent text-white border-2 border-white px-4 py-2 rounded">
+          <button className="cursor-pointer rounded-full text-2xl w-md hover:bg-white hover:text-black bg-transparent text-white border-2 border-white px-4 py-2 rounded">
             {loading ? "Loading..." : "Register"} {/* Update this line */}
           </button>
         </div>
       </form>
+      <div className=" mt-4 flex justify-center">
+        <a
+          onClick={() => navigate("/login")}
+          className="cursor-pointer border-solid border-white text-center rounded-full text-2xl w-sm hover:bg-white hover:text-black bg-transparent text-white border-2 border-white px-4 py-2 rounded"
+        >
+          Back
+        </a>
+      </div>
     </div>
   );
 };
