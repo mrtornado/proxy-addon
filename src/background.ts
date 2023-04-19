@@ -62,12 +62,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           scope: "regular",
         },
         () => {
-          chrome.storage.local.get({ proxies: [] }, (result) => {
+          chrome.storage.local.get({ proxies: [], ua: null }, (result) => {
             let proxies = result.proxies;
             proxies.push({ host: request.host, port: request.port });
-            chrome.storage.local.set({ proxies: proxies }, () => {
-              sendResponse({ success: true }); // Add a response object
-            });
+
+            // Check if ua key is an empty string, null, or doesn't exist at all
+            if (!result.ua) {
+              result.ua = navigator.userAgent;
+            }
+
+            chrome.storage.local.set(
+              { proxies: proxies, ua: result.ua },
+              () => {
+                sendResponse({ success: true }); // Add a response object
+              }
+            );
           });
         }
       );
@@ -100,7 +109,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (activeProxy) {
           const ua = result.ua;
           const sec = result.ua.includes("Mac") ? "macOS" : "Windows";
-          console.log(sec);
           const modifiedRules = rules.map((rule) => {
             if (rule.id === 1) {
               return {
@@ -136,7 +144,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                   requestHeaders: [
                     {
                       ...rule.action.requestHeaders[0],
-                      value: ua || window.navigator.userAgent,
+                      value: ua || navigator.userAgent,
                     },
                   ],
                 },
@@ -149,7 +157,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                   requestHeaders: [
                     {
                       ...rule.action.requestHeaders[0],
-                      value: sec || "macOS",
+                      value: sec,
                     },
                   ],
                 },

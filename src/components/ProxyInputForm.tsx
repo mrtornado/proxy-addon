@@ -103,7 +103,7 @@ const ProxyInputForm: React.FC<ProxyInputFormProps> = ({
             ""
           ) : (
             <Link className="text-green-500 text-xl" to="/signup">
-              Create YPP account to load multiple proxies from file
+              Create YPP account and load multiple proxies.
             </Link>
           )}
 

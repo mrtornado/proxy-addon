@@ -334,9 +334,8 @@ const LoginForm = () => {
                 </span>
               </Link>{" "}
               with YourPrivateProxy if you don't have one.
-              <br />
-              <span className="text-blue-500">It's free! </span> Login and apply
-              for a free proxy trial.
+              <span className="text-blue-500"> It's free! </span> Login and
+              apply for a free proxy trial.
             </div>
             {error && (
               <p className="text-2xl text-red-600 text-center">{error}</p>
