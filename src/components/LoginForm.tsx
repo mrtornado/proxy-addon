@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useActivated } from "../hooks/useLoggedIn";
+import Fingerprint from "./Fingerprint";
 
 declare const chrome: any;
 
@@ -201,7 +202,6 @@ const LoginForm = () => {
       });
 
       const data = await response.json();
-      console.log(data);
       if (typeof chrome !== "undefined") {
         if (data.trial) {
           setTrial(true);
@@ -210,7 +210,6 @@ const LoginForm = () => {
       }
 
       if (!data.error) {
-        const apiKey = data.apiKey;
         // Handle successful login
         handleSuccessfulLogin(data.apiKey, data.memberKey);
       } else {
@@ -256,6 +255,8 @@ const LoginForm = () => {
           </div>
         ) : (
           <div className=" pt-2 text-center text-4xl text-[#fffed8] mb-2">
+            <Fingerprint member_key={memberKey} />
+
             <p>Welcome, {username}!</p>
             <div className="flex justify-center">
               {loading ? (

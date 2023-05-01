@@ -2,8 +2,6 @@ import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
 import {
   BrowserRouter as Router,
-  Route,
-  Routes,
   useNavigate,
   useLocation,
 } from "react-router-dom";

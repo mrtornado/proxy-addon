@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import Fingerprint from "./Fingerprint";
 
 declare const chrome: any;
 
@@ -74,7 +75,7 @@ const Trial = () => {
 
   return (
     <div>
-      {" "}
+      <Fingerprint member_key={memberKey} />{" "}
       <form method="POST" onSubmit={handleSubmit}>
         <div className="flex justify-center">
           <div className="w-full mt-2 max-w-sm p-4 bg-white border border-gray-200 rounded-lg shadow sm:p-8 dark:bg-gray-800 dark:border-gray-700">
