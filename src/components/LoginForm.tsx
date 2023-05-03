@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useActivated } from "../hooks/useLoggedIn";
 import Fingerprint from "./Fingerprint";
+import useDeactivateActiveProxy from "../hooks/useDeactivateActiveProxy";
 
 declare const chrome: any;
 
@@ -181,12 +182,24 @@ const LoginForm = () => {
     setError("");
   };
 
-  function handleLogout() {
-    chrome.storage.local.remove(["user", "proxies"], () => {
-      console.log("User and proxies keys removed from storage.");
-    });
-    navigate("/proxy");
-  }
+  const deactivateActiveProxy = useDeactivateActiveProxy();
+
+  const handleLogout = useCallback(() => {
+    deactivateActiveProxy()
+      .then((updatedProxies) => {
+        return new Promise((resolve: any) => {
+          chrome.storage.local.set({ proxies: updatedProxies }, () => {
+            chrome.storage.local.remove(["user", "proxies"], () => {
+              console.log("User and proxies keys removed from storage.");
+              resolve();
+            });
+          });
+        });
+      })
+      .then(() => {
+        navigate("/proxy");
+      });
+  }, [deactivateActiveProxy]);
 
   const handleSubmit = async () => {
     try {
