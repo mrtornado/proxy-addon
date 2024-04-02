@@ -5,6 +5,36 @@ let contentScriptIsActive = false;
 
 let activeProxy = null;
 
+async function updateIcon() {
+  const result = await new Promise((resolve) => {
+    chrome.storage.local.get(["proxies", "ua"], (data) => {
+      resolve(data);
+    });
+  });
+
+  let iconPath = '/assets/icons/32x32-default.png'; // Default icon
+
+  const activeProxy = result.proxies.find(proxy => proxy.isActive);
+  const ua = result.ua;
+
+  if (activeProxy) {
+    if (ua && activeProxy.headersActive) {
+      // If the active proxy has a ua property populated
+      iconPath = '/assets/icons/32x32-active-full.png';
+    } else if (activeProxy.headersActive) {
+      // If headers are active but ua is not populated
+      iconPath = '/assets/icons/32x32-active-medium.png';
+    } else {
+      // Proxy is active but headers and ua are not
+      iconPath = '/assets/icons/32x32-active-low.png';
+    }
+  }
+
+  chrome.action.setIcon({ path: iconPath });
+}
+// Call updateIcon on extension startup
+updateIcon();
+
 chrome.webRequest.onAuthRequired.addListener(
   async (details, callback) => {
     const result = await new Promise((resolve) => {
@@ -64,17 +94,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         () => {
           chrome.storage.local.get({ proxies: [], ua: null }, (result) => {
             let proxies = result.proxies;
-            proxies.push({ host: request.host, port: request.port });
+            proxies.push({ host: request.host, port: request.port, isActive: true });
 
             // Check if ua key is an empty string, null, or doesn't exist at all
-            if (!result.ua) {
-              result.ua = navigator.userAgent;
-            }
+            // if (!result.ua) {
+            //   result.ua = navigator.userAgent;
+            // }
+            // so I removed this ua shit when proxy is activating make sure you didn't broke anything :)) the line below has to be  { proxies: proxies, ua: result.ua}
 
             chrome.storage.local.set(
-              { proxies: proxies, ua: result.ua },
+              { proxies: proxies}, // ua: result.ua
               () => {
                 sendResponse({ success: true }); // Add a response object
+                updateIcon()
               }
             );
           });
@@ -90,6 +122,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         () => {
           chrome.storage.local.get({ proxies: [] }, async (result) => {
             let proxies = result.proxies;
+
+            proxies.forEach(proxy => {
+              if (proxy.host === request.host && proxy.port === request.port) {
+                proxy.isActive = false;
+              }
+            });
+
             proxies = proxies.filter(
               (proxy) =>
                 proxy.host !== request.host || proxy.port !== request.port
@@ -98,6 +137,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               chrome.storage.local.set({ proxies }, resolve);
             });
             sendResponse({ success: true });
+            updateIcon()
           });
         }
       );
@@ -105,7 +145,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     case "activateHeaders":
       chrome.storage.local.get(["proxies", "ua"], (result) => {
-        const activeProxy = result.proxies.find((proxy) => proxy.headersActive);
+        const activeProxy = result.proxies.find((proxy) => proxy.isActive)
+ 
         if (activeProxy) {
           const ua = result.ua;
           const sec = result.ua.includes("Mac") ? "macOS" : "Windows";
@@ -171,6 +212,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             },
             () => {
               sendResponse({ success: true });
+              updateIcon()
             }
           );
         }
@@ -184,6 +226,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         },
         () => {
           sendResponse({ success: true });
+          updateIcon()
         }
       );
       return true;
