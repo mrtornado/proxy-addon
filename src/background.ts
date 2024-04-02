@@ -21,7 +21,7 @@ async function updateIcon() {
     if (ua && activeProxy.headersActive) {
       // If the active proxy has a ua property populated
       iconPath = '/assets/icons/32x32-active-full.png';
-    } else if (activeProxy.headersActive) {
+    } else if (activeProxy.headersActive || ua) {
       // If headers are active but ua is not populated
       iconPath = '/assets/icons/32x32-active-medium.png';
     } else {
@@ -94,7 +94,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         () => {
           chrome.storage.local.get({ proxies: [], ua: null }, (result) => {
             let proxies = result.proxies;
-            proxies.push({ host: request.host, port: request.port, isActive: true });
+
+        // Deactivate all other proxies
+        proxies.forEach(proxy => proxy.isActive = false);
+
+        // Add and activate the new proxy
+        proxies.push({ host: request.host, port: request.port, isActive: true });
 
             // Check if ua key is an empty string, null, or doesn't exist at all
             // if (!result.ua) {
@@ -241,18 +246,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
       });
       sendResponse({ success: true });
+      updateIcon()
       break;
 
     case "deactivateContentScript":
       // Deactivate the content script
       contentScriptIsActive = false;
       sendResponse({ success: true });
+      updateIcon()
       break;
 
     case "deactivateAllProxies":
       deactivateAllProxies()
         .then(() => {
           sendResponse({ success: true });
+          updateIcon()
         })
         .catch((error) => {
           console.error("Error deactivating all proxies:", error);
