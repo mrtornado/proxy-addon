@@ -1,6 +1,12 @@
 //@ts-nocheck
 export {};
 
+// TODO: SystemTime and toLocaleString
+// Date/Time
+// System Time	Wed Apr 03 2024 13:09:06 GMT+0300 (Eastern European Summer Time)
+// toLocaleString	4/3/2024, 1:09:06 PM
+// toLocaleFormat	undefined
+
 function useProperties(properties) {
   // Find the proxy with isActive set to true
   const activeProxy = properties.proxies.find((proxy) => proxy.isActive);
@@ -76,6 +82,7 @@ function setupUserAgentHook(UserAgent, language, timezone, os) {
       }
       var ChromeOnly = newUserAgent.replace(/^.*Chrome\/(\d+).*$/gi, "$1");
       var ChromeFullVersion = newUserAgent.match(/Chrome\/([\d.]+)/)?.[1];
+      var appVer = newUserAgent.replace(/^Mozilla\//, "");
       var ChromeV =
         newUserAgent.match(/Edg\/(\d+)/)?.[1] ||
         newUserAgent.match(/OPR\/(\d+)/)?.[1] ||
@@ -114,8 +121,6 @@ function setupUserAgentHook(UserAgent, language, timezone, os) {
         !newUserAgent.includes("Edg/")
           ? "Safari"
           : "Chrome");
-
-      const appVer = userAgent.replace(/^Mozilla\//, "");
 
       Object.defineProperties(navigator, {
         userAgent: rTMPL(newUserAgent),
