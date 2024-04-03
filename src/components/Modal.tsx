@@ -10,39 +10,43 @@ interface ModalProps {
 }
 
 const generateAlias = (userAgentString: string) => {
-  if (userAgentString.includes("Windows NT")) {
-    if (userAgentString.includes("OPR")) {
-      return "Windows Opera Browser";
-    } else if (userAgentString.includes("Edg")) {
-      return "Windows Edge";
-    } else if (userAgentString.includes("Firefox")) {
-      return "Windows Firefox";
-    } else if (
-      userAgentString.includes("Chrome") &&
-      !userAgentString.includes("Edg")
-    ) {
-      return "Windows Chrome";
-    } else if (userAgentString.includes("Xbox One")) {
-      return "Xbox One Edge";
-    }
-  } else if (userAgentString.includes("Macintosh")) {
-    if (userAgentString.includes("OPR")) {
-      return "Mac OS X Opera";
-    } else if (
-      userAgentString.includes("Safari") &&
-      !userAgentString.includes("Chrome")
-    ) {
-      return "Mac OS X Safari";
-    } else if (userAgentString.includes("Firefox")) {
-      return "Mac OS X Firefox";
-    } else if (userAgentString.includes("Edg")) {
-      return "Mac OS X Edge";
-    } else if (userAgentString.includes("Chrome")) {
-      return "Mac OS X Chrome";
-    }
+  // Extract OS version
+  let osMatch = userAgentString.match(
+    /Windows NT [\d.]+|Mac OS X [\d._]+|CrOS [\w\s]+/
+  );
+  let os = osMatch ? osMatch[0].replace(/_/g, ".") : "Unknown OS";
+
+  // Extract Browser name and version
+  let browserMatch;
+  let browserName, browserVersion;
+
+  // Check for Opera
+  browserMatch = userAgentString.match(/OPR\/(\d+(\.\d+)?)/);
+  if (browserMatch) {
+    browserName = "Opera";
+    browserVersion = browserMatch[1];
+  }
+  // Check for Edge
+  else if ((browserMatch = userAgentString.match(/Edge?\/(\d+(\.\d+)?)/))) {
+    browserName = "Edge";
+    browserVersion = browserMatch[1];
+  }
+  // Check for Chrome (ensure it's not an Edge/Opera)
+  else if (
+    !userAgentString.includes("Edge") &&
+    !userAgentString.includes("OPR") &&
+    (browserMatch = userAgentString.match(/Chrome\/(\d+(\.\d+)?)/))
+  ) {
+    browserName = "Chrome";
+    browserVersion = browserMatch[1];
+  }
+  // Fallback if none matched
+  else {
+    browserName = "Unknown Browser";
+    browserVersion = "Unknown Version";
   }
 
-  return "Unknown Browser";
+  return `${os} ${browserName} ${browserVersion}`;
 };
 
 const Modal: React.FC<ModalProps> = ({
@@ -56,11 +60,17 @@ const Modal: React.FC<ModalProps> = ({
   return (
     <>
       {showModal && (
-        <div className="fixed inset-0 flex items-center justify-center">
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50"
+          onClick={handleCloseModal}
+        >
           <div className="fixed inset-0 transition-opacity">
             <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
           </div>
-          <div className="bg-white rounded-lg overflow-hidden shadow-xl transform transition-all sm:max-w-lg sm:w-full">
+          <div
+            className="bg-white rounded-lg overflow-hidden shadow-xl transform transition-all sm:max-w-lg sm:w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
               <div className="sm:flex sm:items-start">
                 <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">

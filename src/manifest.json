@@ -44,6 +44,7 @@
   "permissions": [
     "background",
     "activeTab",
+    "privacy",
     "scripting",
     "tabs",
     "proxy",
@@ -60,4 +61,5 @@
   "background": {
     "service_worker": "background.js"
   }
+  
 }

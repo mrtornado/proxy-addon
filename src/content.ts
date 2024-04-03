@@ -11,7 +11,7 @@ function useProperties(properties) {
     let os;
 
     if (UserAgent.indexOf("Windows") !== -1) {
-      os = "Win32";
+      os = "Windows";
     } else if (UserAgent.indexOf("Mac") !== -1) {
       os = "MacIntel";
     }
@@ -74,7 +74,46 @@ function setupUserAgentHook(UserAgent, language, timezone, os) {
           writable: false,
         };
       }
-      var ChromeV = newUserAgent.replace(/^.*Chrome\/(\d+).*$/gi, "$1");
+      var ChromeOnly = newUserAgent.replace(/^.*Chrome\/(\d+).*$/gi, "$1");
+      var ChromeFullVersion = newUserAgent.match(/Chrome\/([\d.]+)/)?.[1];
+      var ChromeV =
+        newUserAgent.match(/Edg\/(\d+)/)?.[1] ||
+        newUserAgent.match(/OPR\/(\d+)/)?.[1] ||
+        newUserAgent.replace(/^.*Chrome\/(\d+).*$/gi, "$1");
+      // full version lookup
+      var ChromeVFull;
+
+      var edgeMatch = newUserAgent.match(/Edg\/([\d.]+)/);
+      var operaMatch = newUserAgent.match(/OPR\/([\d.]+)/);
+      var chromeMatch = newUserAgent.match(/Chrome\/([\d.]+)/);
+
+      if (edgeMatch) {
+        ChromeVFull = edgeMatch[1];
+      } else if (operaMatch) {
+        ChromeVFull = operaMatch[1];
+      } else if (chromeMatch) {
+        ChromeVFull = chromeMatch[1];
+      } else {
+        ChromeVFull = "Unknown Version";
+      }
+      // end full version lookup
+
+      var osVersion = newUserAgent
+        .match(/Windows NT (\d+\.\d+)|Mac OS X (\d+(_\d+)+)/)
+        ?.slice(1)
+        .find(Boolean)
+        ?.replace(/_/g, ".");
+
+      const browserName =
+        newUserAgent
+          .match(/(Firefox|OPR|Edg)\//)?.[1]
+          .replace("OPR", "Opera")
+          .replace("Edg", "Edge") ||
+        (newUserAgent.includes("Safari/") &&
+        !newUserAgent.includes("Chrome/") &&
+        !newUserAgent.includes("Edg/")
+          ? "Safari"
+          : "Chrome");
 
       Object.defineProperties(navigator, {
         userAgent: rTMPL(newUserAgent),
@@ -85,11 +124,20 @@ function setupUserAgentHook(UserAgent, language, timezone, os) {
         languages: rTMPL(language),
         userAgentData: rTMPL({
           brands: [
-            { brand: " Not A;Brand", version: ChromeV },
-            { brand: "Chromium", version: ChromeV },
-            { brand: "Google Chrome", version: ChromeV },
+            { brand: browserName, version: ChromeV },
+            { brand: " Not A;Brand", version: "8" },
+            { brand: "Chromium", version: ChromeOnly },
           ],
           mobile: false,
+          platform: os,
+          platformVersion: osVersion,
+          architecture: "x86",
+          uaFullVersion: ChromeFullVersion,
+          fullVersionList: [
+            { brand: browserName, version: ChromeVFull },
+            { brand: "Not:A-Brand", version: "8.0.0.0" },
+            { brand: "Chromium", version: ChromeFullVersion },
+          ],
         }),
 
         deviceMemory: rTMPL(8),

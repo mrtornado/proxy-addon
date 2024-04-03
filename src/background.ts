@@ -5,6 +5,22 @@ let contentScriptIsActive = false;
 
 let activeProxy = null;
 
+function changeWebRTCPolicy(enabled) {
+  const pn = chrome.privacy.network;
+  const pi = chrome.privacy.IPHandlingPolicy;
+
+  // Set to DISABLE_NON_PROXIED_UDP when enabled, and DEFAULT when disabled
+  const policy = enabled
+    ? pi.DISABLE_NON_PROXIED_UDP
+    : pi.DEFAULT_PUBLIC_INTERFACE_ONLY;
+  pn.webRTCIPHandlingPolicy.set({ value: policy }, () => {
+    if (chrome.runtime.lastError) {
+      console.error("Error changing WebRTC policy:", chrome.runtime.lastError);
+    } else {
+    }
+  });
+}
+
 async function updateIcon() {
   const result = await new Promise((resolve) => {
     chrome.storage.local.get(["proxies", "ua"], (data) => {
@@ -12,21 +28,21 @@ async function updateIcon() {
     });
   });
 
-  let iconPath = '/assets/icons/32x32-default.png'; // Default icon
+  let iconPath = "/assets/icons/32x32-default.png"; // Default icon
 
-  const activeProxy = result.proxies.find(proxy => proxy.isActive);
+  const activeProxy = result.proxies.find((proxy) => proxy.isActive);
   const ua = result.ua;
 
   if (activeProxy) {
     if (ua && activeProxy.headersActive) {
       // If the active proxy has a ua property populated
-      iconPath = '/assets/icons/32x32-active-full.png';
+      iconPath = "/assets/icons/32x32-active-full.png";
     } else if (activeProxy.headersActive || ua) {
       // If headers are active but ua is not populated
-      iconPath = '/assets/icons/32x32-active-medium.png';
+      iconPath = "/assets/icons/32x32-active-medium.png";
     } else {
       // Proxy is active but headers and ua are not
-      iconPath = '/assets/icons/32x32-active-low.png';
+      iconPath = "/assets/icons/32x32-active-low.png";
     }
   }
 
@@ -95,11 +111,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           chrome.storage.local.get({ proxies: [], ua: null }, (result) => {
             let proxies = result.proxies;
 
-        // Deactivate all other proxies
-        proxies.forEach(proxy => proxy.isActive = false);
+            // Deactivate all other proxies
+            proxies.forEach((proxy) => (proxy.isActive = false));
 
-        // Add and activate the new proxy
-        proxies.push({ host: request.host, port: request.port, isActive: true });
+            // Add and activate the new proxy
+            proxies.push({
+              host: request.host,
+              port: request.port,
+              isActive: true,
+            });
 
             // Check if ua key is an empty string, null, or doesn't exist at all
             // if (!result.ua) {
@@ -108,10 +128,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             // so I removed this ua shit when proxy is activating make sure you didn't broke anything :)) the line below has to be  { proxies: proxies, ua: result.ua}
 
             chrome.storage.local.set(
-              { proxies: proxies}, // ua: result.ua
+              { proxies: proxies }, // ua: result.ua
               () => {
                 sendResponse({ success: true }); // Add a response object
-                updateIcon()
+                updateIcon();
               }
             );
           });
@@ -128,7 +148,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           chrome.storage.local.get({ proxies: [] }, async (result) => {
             let proxies = result.proxies;
 
-            proxies.forEach(proxy => {
+            proxies.forEach((proxy) => {
               if (proxy.host === request.host && proxy.port === request.port) {
                 proxy.isActive = false;
               }
@@ -142,7 +162,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               chrome.storage.local.set({ proxies }, resolve);
             });
             sendResponse({ success: true });
-            updateIcon()
+            updateIcon();
           });
         }
       );
@@ -150,8 +170,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     case "activateHeaders":
       chrome.storage.local.get(["proxies", "ua"], (result) => {
-        const activeProxy = result.proxies.find((proxy) => proxy.isActive)
- 
+        const activeProxy = result.proxies.find((proxy) => proxy.isActive);
+
         if (activeProxy) {
           const ua = result.ua;
           const sec = result.ua.includes("Mac") ? "macOS" : "Windows";
@@ -217,7 +237,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             },
             () => {
               sendResponse({ success: true });
-              updateIcon()
+              changeWebRTCPolicy(true);
+              updateIcon();
             }
           );
         }
@@ -231,7 +252,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         },
         () => {
           sendResponse({ success: true });
-          updateIcon()
+          changeWebRTCPolicy(false);
+          updateIcon();
         }
       );
       return true;
@@ -246,21 +268,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
       });
       sendResponse({ success: true });
-      updateIcon()
+      updateIcon();
       break;
 
     case "deactivateContentScript":
       // Deactivate the content script
       contentScriptIsActive = false;
       sendResponse({ success: true });
-      updateIcon()
+      updateIcon();
       break;
 
     case "deactivateAllProxies":
       deactivateAllProxies()
         .then(() => {
           sendResponse({ success: true });
-          updateIcon()
+          updateIcon();
         })
         .catch((error) => {
           console.error("Error deactivating all proxies:", error);
