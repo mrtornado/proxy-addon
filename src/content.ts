@@ -115,9 +115,11 @@ function setupUserAgentHook(UserAgent, language, timezone, os) {
           ? "Safari"
           : "Chrome");
 
+      const appVer = userAgent.replace(/^Mozilla\//, "");
+
       Object.defineProperties(navigator, {
         userAgent: rTMPL(newUserAgent),
-        appVersion: rTMPL(newUserAgent),
+        appVersion: rTMPL(appVer),
         platform: rTMPL(os),
         productSub: rTMPL("20030107"),
         language: rTMPL(language),

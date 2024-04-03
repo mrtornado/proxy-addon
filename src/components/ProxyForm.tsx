@@ -384,6 +384,9 @@ function ProxyForm() {
     reader.readAsText(file);
   }
 
+  // To modify the generateAlias function see below
+  // Modal.tsx:12
+
   useEffect(() => {
     if (typeof chrome !== "undefined") {
       const userAgentList = [
