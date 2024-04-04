@@ -37,7 +37,7 @@ async function updateIcon() {
     if (ua && activeProxy.headersActive) {
       // If the active proxy has a ua property populated
       iconPath = "/assets/icons/32x32-active-full.png";
-    } else if (activeProxy.headersActive || ua) {
+    } else if (activeProxy.headersActive) {
       // If headers are active but ua is not populated
       iconPath = "/assets/icons/32x32-active-medium.png";
     } else {
