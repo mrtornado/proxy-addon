@@ -20,6 +20,7 @@ export default defineConfig({
         main: "index.html",
         background: "src/background.ts",
         content: "src/content.ts",
+        removeFrames: "src/removeFrames.ts",
       },
       output: {
         entryFileNames: "[name].js",

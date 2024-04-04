@@ -231,11 +231,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             }
             return rule;
           });
+
+          // Set the extension state to 'activated'
+          chrome.storage.sync.set({ extensionState: "activated" }, () => {
+            console.log("Iframe removal activated");
+          });
+          // Log the modified rules for debugging
+          console.log("Updating rules with:", modifiedRules);
           chrome.declarativeNetRequest.updateDynamicRules(
             {
               addRules: modifiedRules,
+              removeRuleIds: modifiedRules.map((rule) => rule.id), // Assuming replacement of existing rules
             },
             () => {
+              if (chrome.runtime.lastError) {
+                console.error(
+                  "Error updating rules:",
+                  chrome.runtime.lastError.message
+                );
+              } else {
+                console.log("Rules successfully updated");
+              }
               sendResponse({ success: true });
               changeWebRTCPolicy(true);
               updateIcon();
@@ -256,6 +272,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           updateIcon();
         }
       );
+
+      // Set the extension state to 'deactivated'
+      chrome.storage.sync.set({ extensionState: "deactivated" }, () => {
+        console.log("Iframe removal deactivated");
+      });
       return true;
 
     case "activateContentScript":

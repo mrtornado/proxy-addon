@@ -78,6 +78,17 @@ const rules: chrome.declarativeNetRequest.Rule[] = [
       resourceTypes: allResourceTypes,
     },
   },
+  {
+    id: 5,
+    priority: 1,
+    action: {
+      type: chrome.declarativeNetRequest.RuleActionType.BLOCK,
+    },
+    condition: {
+      resourceTypes: ["sub_frame"],
+      urlFilter: "|http|https",
+    },
+  },
 ];
 
 export default rules;

@@ -41,6 +41,13 @@
       "128": "/assets/icons/128x128-active-full.png"
     }
   },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["removeFrames.js"],
+      "run_at": "document_start"
+    }
+  ],
   "permissions": [
     "background",
     "activeTab",

@@ -1,12 +1,6 @@
 //@ts-nocheck
 export {};
 
-// TODO: SystemTime and toLocaleString
-// Date/Time
-// System Time	Wed Apr 03 2024 13:09:06 GMT+0300 (Eastern European Summer Time)
-// toLocaleString	4/3/2024, 1:09:06 PM
-// toLocaleFormat	undefined
-
 function useProperties(properties) {
   // Find the proxy with isActive set to true
   const activeProxy = properties.proxies.find((proxy) => proxy.isActive);
@@ -69,6 +63,30 @@ function setupUserAgentHook(UserAgent, language, timezone, os) {
         const options = originalResolvedOptions.call(this);
         options.timeZone = timezone;
         return options;
+      };
+
+      // New override for Date.prototype.toLocaleString
+      const originalToLocaleString = Date.prototype.toLocaleString;
+      Date.prototype.toLocaleString = function (locale, options) {
+        options = options || {};
+        options.timeZone = timezone; // Set the desired timezone
+        return originalToLocaleString.call(this, locale, options);
+      };
+
+      // Override for Date.prototype.toString
+      Date.prototype.toString = function () {
+        return new Intl.DateTimeFormat("en-US", {
+          timeZone: timezone,
+          weekday: "long", // e.g., Wednesday
+          year: "numeric", // e.g., 2024
+          month: "long", // e.g., April
+          day: "numeric", // e.g., 3
+          hour: "numeric", // e.g., 11
+          minute: "2-digit", // e.g., 29
+          second: "2-digit", // e.g., 05
+          hour12: true, // Use 12-hour format
+          timeZoneName: "long", // e.g., British Summer Time
+        }).format(this);
       };
 
       var navigator = Object.create(window.navigator);
