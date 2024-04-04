@@ -169,12 +169,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
 
     case "activateHeaders":
-      chrome.storage.local.get(["proxies", "ua"], (result) => {
-        const activeProxy = result.proxies.find((proxy) => proxy.isActive);
+      (async () => {
+        const result = await new Promise((resolve) => {
+          chrome.storage.local.get(["proxies", "ua"], (data) => {
+            resolve(data);
+          });
+        });
 
+        const activeProxy = result.proxies.find((proxy) => proxy.isActive);
         if (activeProxy) {
-          const ua = result.ua;
-          const sec = result.ua.includes("Mac") ? "macOS" : "Windows";
+          const ua = result.ua || navigator.userAgent;
+          const sec = ua.includes("Mac") ? "macOS" : "Windows";
+
           const modifiedRules = rules.map((rule) => {
             if (rule.id === 1) {
               return {
@@ -210,7 +216,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                   requestHeaders: [
                     {
                       ...rule.action.requestHeaders[0],
-                      value: ua || navigator.userAgent,
+                      value: ua,
                     },
                   ],
                 },
@@ -236,12 +242,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           chrome.storage.sync.set({ extensionState: "activated" }, () => {
             console.log("Iframe removal activated");
           });
-          // Log the modified rules for debugging
-          console.log("Updating rules with:", modifiedRules);
+          // Update dynamic rules
           chrome.declarativeNetRequest.updateDynamicRules(
             {
               addRules: modifiedRules,
-              removeRuleIds: modifiedRules.map((rule) => rule.id), // Assuming replacement of existing rules
+              removeRuleIds: modifiedRules.map((rule) => rule.id),
             },
             () => {
               if (chrome.runtime.lastError) {
@@ -258,7 +263,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             }
           );
         }
-      });
+      })();
       return true;
 
     case "deactivateHeaders":
