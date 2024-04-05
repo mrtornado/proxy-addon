@@ -282,7 +282,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                   chrome.runtime.lastError.message
                 );
               } else {
-                console.log("Rules successfully updated");
+                console.log("Header Rules successfully updated");
               }
               sendResponse({ success: true });
               changeWebRTCPolicy(true);
@@ -317,10 +317,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
       );
 
-      // Set the extension state to 'deactivated'
-      chrome.storage.sync.set({ extensionState: "deactivated" }, () => {
-        console.log("Iframe removal deactivated");
-      });
       return true;
 
     case "activateContentScript":
