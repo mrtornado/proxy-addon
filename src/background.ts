@@ -35,36 +35,30 @@ function changeWebRTCPolicy(enabled) {
 }
 
 async function updateIcon() {
-  try {
-    const result = await new Promise((resolve, reject) => {
-      chrome.storage.local.get(["proxies", "ua"], (data) => {
-        if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError);
-        } else {
-          resolve(data);
-        }
-      });
+  const result = await new Promise((resolve) => {
+    chrome.storage.local.get(["proxies", "ua"], (data) => {
+      resolve(data);
     });
+  });
 
-    let iconPath = "/assets/icons/32x32-default.png"; // Default icon
+  let iconPath = "/assets/icons/32x32-default.png"; // Default icon
 
-    const activeProxy = result.proxies.find((proxy) => proxy.isActive);
-    const ua = result.ua;
+  // Ensure that proxies is an array before attempting to find an active proxy
+  const proxies = Array.isArray(result.proxies) ? result.proxies : [];
+  const activeProxy = proxies.find((proxy) => proxy.isActive);
+  const ua = result.ua;
 
-    if (activeProxy) {
-      if (ua && activeProxy.headersActive) {
-        iconPath = "/assets/icons/32x32-active-full.png";
-      } else if (activeProxy.headersActive) {
-        iconPath = "/assets/icons/32x32-active-medium.png";
-      } else {
-        iconPath = "/assets/icons/32x32-active-low.png";
-      }
+  if (activeProxy) {
+    if (ua && activeProxy.headersActive) {
+      iconPath = "/assets/icons/32x32-active-full.png";
+    } else if (activeProxy.headersActive) {
+      iconPath = "/assets/icons/32x32-active-medium.png";
+    } else {
+      iconPath = "/assets/icons/32x32-active-low.png";
     }
-
-    chrome.action.setIcon({ path: iconPath });
-  } catch (error) {
-    console.error("Error updating icon:", error);
   }
+
+  chrome.action.setIcon({ path: iconPath });
 }
 
 // Consider calling updateIcon after a short delay on startup
