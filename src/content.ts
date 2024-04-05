@@ -1,6 +1,39 @@
 //@ts-nocheck
 export {};
 
+// Removing iFrames
+function removeIframes(element = document) {
+  element.querySelectorAll("iframe").forEach((iframe) => {
+    iframe.remove();
+  });
+}
+
+function observeMutations() {
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      if (mutation.type === "childList") {
+        mutation.addedNodes.forEach((node) => {
+          if (node instanceof Element) {
+            removeIframes(node);
+          }
+        });
+      }
+    }
+  });
+
+  observer.observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+  });
+}
+
+// Remove existing iframes and start observing for new ones when the script is loaded
+removeIframes();
+observeMutations();
+
+// Interval as a fallback to catch missed iframes
+setInterval(() => removeIframes(), 1000); // Runs every second
+
 function useProperties(properties) {
   // Find the proxy with isActive set to true
   const activeProxy = properties.proxies.find((proxy) => proxy.isActive);

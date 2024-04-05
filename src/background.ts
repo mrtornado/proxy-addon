@@ -5,6 +5,12 @@ let contentScriptIsActive = false;
 
 let activeProxy = null;
 
+function disableExt() {
+  self.mo?.disconnect?.();
+  delete self.mo;
+  delete self.observe;
+}
+
 function changeWebRTCPolicy(enabled) {
   const pn = chrome.privacy.network;
   const pi = chrome.privacy.IPHandlingPolicy;
@@ -238,10 +244,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return rule;
           });
 
-          // Set the extension state to 'activated'
-          chrome.storage.sync.set({ extensionState: "activated" }, () => {
-            console.log("Iframe removal activated");
+          // Now, activate the content script
+          await chrome.scripting.registerContentScripts([
+            {
+              id: "remove-iframe",
+              js: ["content.js"],
+              matches: ["<all_urls>"],
+              runAt: "document_start",
+            },
+          ]);
+
+          // Execute the script on all current tabs
+          const tabs = await chrome.tabs.query({});
+          tabs.forEach(({ id }) => {
+            chrome.scripting
+              .executeScript({ target: { tabId: id }, files: ["content.js"] })
+              .catch(() => {});
           });
+
           // Update dynamic rules
           chrome.declarativeNetRequest.updateDynamicRules(
             {
@@ -271,7 +291,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         {
           removeRuleIds: rules.map((rule) => rule.id),
         },
-        () => {
+        async () => {
+          // Now, deactivate the content script
+          await chrome.scripting
+            .unregisterContentScripts({ ids: ["remove-iframe"] })
+            .catch(() => {});
+
+          // Optionally, deactivate the script on all current tabs
+          const allTabs = await chrome.tabs.query({});
+          allTabs.forEach(({ id }) => {
+            chrome.scripting
+              .executeScript({ target: { tabId: id }, func: disableExt })
+              .catch(() => {});
+          });
           sendResponse({ success: true });
           changeWebRTCPolicy(false);
           updateIcon();
@@ -320,19 +352,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse({ success: false });
       return false;
   }
-
-  chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (
-      contentScriptIsActive &&
-      changeInfo.status === "complete" &&
-      !tab.url.startsWith("chrome://")
-    ) {
-      chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        files: ["content.js"],
-      });
-    }
-  });
 });
 
 function deactivateAllProxies() {
