@@ -5,6 +5,13 @@ let contentScriptIsActive = false;
 
 let activeProxy = null;
 
+chrome.runtime.onInstalled.addListener(async (details) => {
+  if (details.reason === "install" || details.reason === "update") {
+    // Call function to clear active proxies
+    await deactivateAllProxies();
+  }
+});
+
 function disableExt() {
   self.mo?.disconnect?.();
   delete self.mo;
@@ -28,34 +35,40 @@ function changeWebRTCPolicy(enabled) {
 }
 
 async function updateIcon() {
-  const result = await new Promise((resolve) => {
-    chrome.storage.local.get(["proxies", "ua"], (data) => {
-      resolve(data);
+  try {
+    const result = await new Promise((resolve, reject) => {
+      chrome.storage.local.get(["proxies", "ua"], (data) => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve(data);
+        }
+      });
     });
-  });
 
-  let iconPath = "/assets/icons/32x32-default.png"; // Default icon
+    let iconPath = "/assets/icons/32x32-default.png"; // Default icon
 
-  const activeProxy = result.proxies.find((proxy) => proxy.isActive);
-  const ua = result.ua;
+    const activeProxy = result.proxies.find((proxy) => proxy.isActive);
+    const ua = result.ua;
 
-  if (activeProxy) {
-    if (ua && activeProxy.headersActive) {
-      // If the active proxy has a ua property populated
-      iconPath = "/assets/icons/32x32-active-full.png";
-    } else if (activeProxy.headersActive) {
-      // If headers are active but ua is not populated
-      iconPath = "/assets/icons/32x32-active-medium.png";
-    } else {
-      // Proxy is active but headers and ua are not
-      iconPath = "/assets/icons/32x32-active-low.png";
+    if (activeProxy) {
+      if (ua && activeProxy.headersActive) {
+        iconPath = "/assets/icons/32x32-active-full.png";
+      } else if (activeProxy.headersActive) {
+        iconPath = "/assets/icons/32x32-active-medium.png";
+      } else {
+        iconPath = "/assets/icons/32x32-active-low.png";
+      }
     }
-  }
 
-  chrome.action.setIcon({ path: iconPath });
+    chrome.action.setIcon({ path: iconPath });
+  } catch (error) {
+    console.error("Error updating icon:", error);
+  }
 }
-// Call updateIcon on extension startup
-updateIcon();
+
+// Consider calling updateIcon after a short delay on startup
+setTimeout(updateIcon, 1000);
 
 chrome.webRequest.onAuthRequired.addListener(
   async (details, callback) => {
@@ -356,11 +369,41 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 function deactivateAllProxies() {
   return new Promise((resolve, reject) => {
-    chrome.proxy.settings.clear({ scope: "regular" }, () => {
+    // First, clear the proxy settings
+    chrome.proxy.settings.clear({ scope: "regular" }, async () => {
       if (chrome.runtime.lastError) {
         reject(chrome.runtime.lastError);
-      } else {
-        resolve();
+        return;
+      }
+
+      // Next, handle the deactivation of headers
+      try {
+        await chrome.declarativeNetRequest.updateDynamicRules({
+          removeRuleIds: rules.map((rule) => rule.id),
+        });
+
+        // Clearing the proxy was successful, now update the proxies' state in local storage
+        chrome.storage.local.get({ proxies: [] }, (result) => {
+          const updatedProxies = result.proxies.map((proxy) => ({
+            ...proxy,
+            isActive: false,
+            headersActive: false, // Assuming each proxy has a 'headersActive' property
+          }));
+
+          chrome.storage.local.set({ proxies: updatedProxies }, () => {
+            if (chrome.runtime.lastError) {
+              reject(chrome.runtime.lastError);
+            } else {
+              resolve();
+            }
+          });
+        });
+
+        // Update the icon to reflect the deactivated state
+        updateIcon();
+      } catch (error) {
+        console.error("Error deactivating headers:", error);
+        reject(error);
       }
     });
   });
