@@ -18,25 +18,49 @@ function disableExt() {
   delete self.observe;
 }
 
-function changeWebRTCPolicy(enabled) {
+function changeWebRTCPolicy(override = false, desiredState = null) {
   const pn = chrome.privacy.network;
   const pi = chrome.privacy.IPHandlingPolicy;
 
-  // Set to DISABLE_NON_PROXIED_UDP when enabled, and DEFAULT when disabled
-  const policy = enabled
-    ? pi.DISABLE_NON_PROXIED_UDP
-    : pi.DEFAULT_PUBLIC_INTERFACE_ONLY;
-  pn.webRTCIPHandlingPolicy.set({ value: policy }, () => {
-    if (chrome.runtime.lastError) {
-      console.error("Error changing WebRTC policy:", chrome.runtime.lastError);
-    } else {
-    }
-  });
+  // Function to set policy
+  const setPolicy = (enable) => {
+    const policy = enable
+      ? pi.DISABLE_NON_PROXIED_UDP
+      : pi.DEFAULT_PUBLIC_INTERFACE_ONLY;
+    pn.webRTCIPHandlingPolicy.set({ value: policy }, () => {
+      if (chrome.runtime.lastError) {
+        console.error(
+          "Error changing WebRTC policy:",
+          chrome.runtime.lastError.message
+        );
+      } else {
+        console.log("WebRTC policy updated to:", policy);
+        console.log(
+          "WebRTC policy is now",
+          enable
+            ? "enabled (restricted to non-proxied UDP)"
+            : "disabled (default public interface only)"
+        );
+      }
+    });
+  };
+
+  if (override) {
+    // If overriding, use the provided desiredState
+    setPolicy(desiredState === "enable");
+  } else {
+    // Otherwise, check the current status from local storage
+    chrome.storage.local.get(["webRTC"], (result) => {
+      const isEnabled = result.webRTC === "enabled";
+      setPolicy(isEnabled);
+    });
+  }
 }
 
 async function updateIcon() {
+  // Use a promise to fetch settings concurrently for proxies, user agent, iframes, and webRTC
   const result = await new Promise((resolve) => {
-    chrome.storage.local.get(["proxies", "ua"], (data) => {
+    chrome.storage.local.get(["proxies", "ua", "iframes", "webRTC"], (data) => {
       resolve(data);
     });
   });
@@ -46,18 +70,27 @@ async function updateIcon() {
   // Ensure that proxies is an array before attempting to find an active proxy
   const proxies = Array.isArray(result.proxies) ? result.proxies : [];
   const activeProxy = proxies.find((proxy) => proxy.isActive);
+
+  // Check settings for iframes and webRTC
+  const iframesEnabled = result.iframes === "enabled";
+  const webRTCEnabled = result.webRTC === "enabled";
   const ua = result.ua;
 
+  // Determine icon based on proxy and headers status
   if (activeProxy) {
-    if (ua && activeProxy.headersActive) {
-      iconPath = "/assets/icons/32x32-active-full.png";
-    } else if (activeProxy.headersActive) {
-      iconPath = "/assets/icons/32x32-active-medium.png";
+    if (webRTCEnabled && iframesEnabled && activeProxy.headersActive) {
+      iconPath = "/assets/icons/32x32-active-full.png"; // All conditions are met: Full active state
+    } else if (
+      activeProxy.headersActive &&
+      (webRTCEnabled || iframesEnabled || ua)
+    ) {
+      iconPath = "/assets/icons/32x32-active-medium.png"; // At least one condition and headers are active: Medium active state
     } else {
-      iconPath = "/assets/icons/32x32-active-low.png";
+      iconPath = "/assets/icons/32x32-active-low.png"; // Proxy is active but no headers or conditions fully met: Low active state
     }
   }
 
+  // Update the browser action icon
   chrome.action.setIcon({ path: iconPath });
 }
 
@@ -285,7 +318,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 console.log("Header Rules successfully updated");
               }
               sendResponse({ success: true });
-              changeWebRTCPolicy(true);
+              changeWebRTCPolicy();
               updateIcon();
             }
           );
@@ -312,7 +345,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               .catch(() => {});
           });
           sendResponse({ success: true });
-          changeWebRTCPolicy(false);
+          changeWebRTCPolicy(true, "disable");
           updateIcon();
         }
       );

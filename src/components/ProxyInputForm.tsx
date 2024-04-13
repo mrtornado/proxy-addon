@@ -97,7 +97,7 @@ const ProxyInputForm: React.FC<ProxyInputFormProps> = ({
       <div className="flex">
         <div>
           <DefaultButton onClick={handleShowModal}>
-            Change UserAgent
+            Configure Browser Settings
           </DefaultButton>
           {loggedIn ? (
             ""

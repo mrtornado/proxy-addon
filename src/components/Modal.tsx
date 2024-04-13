@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 
 interface ModalProps {
   showModal: boolean;
@@ -57,6 +57,70 @@ const Modal: React.FC<ModalProps> = ({
   handleSelectUserAgent,
   handleRemoveUserAgent,
 }) => {
+  const [webRTCEnabled, setWebRTCEnabled] = useState(true);
+  const [iframesEnabled, setIframesEnabled] = useState(true);
+
+  useEffect(() => {
+    // Fetch the initial states for WebRTC and iframes from local storage
+    chrome.storage.local.get(["webRTC", "iframes"], (result) => {
+      // Setup for WebRTC
+      if (result.webRTC) {
+        setWebRTCEnabled(result.webRTC === "enabled");
+      } else {
+        // Default to 'enabled' if not set
+        chrome.storage.local.set({ webRTC: "enabled" });
+        setWebRTCEnabled(true);
+      }
+
+      // Setup for iframes
+      if (result.iframes) {
+        setIframesEnabled(result.iframes === "enabled");
+      } else {
+        // Default to 'enabled' if not set
+        chrome.storage.local.set({ iframes: "enabled" });
+        setIframesEnabled(true);
+      }
+    });
+  }, []);
+
+  // Handlers for toggling settings
+  const handleWebRTCToggle = () => {
+    const newStatus = !webRTCEnabled;
+    setWebRTCEnabled(newStatus);
+    chrome.storage.local.set(
+      { webRTC: newStatus ? "enabled" : "disabled" },
+      () => {
+        if (chrome.runtime.lastError) {
+          console.error(
+            "Failed to save WebRTC status:",
+            chrome.runtime.lastError.message
+          );
+        }
+      }
+    );
+  };
+
+  const handleIframesToggle = () => {
+    const newStatus = !iframesEnabled;
+    setIframesEnabled(newStatus);
+    chrome.storage.local.set(
+      { iframes: newStatus ? "enabled" : "disabled" },
+      () => {
+        if (chrome.runtime.lastError) {
+          console.error(
+            "Failed to save iframes status:",
+            chrome.runtime.lastError.message
+          );
+        } else {
+          console.log(
+            "Iframes status updated to:",
+            newStatus ? "enabled" : "disabled"
+          );
+        }
+      }
+    );
+  };
+
   return (
     <>
       {showModal && (
@@ -74,14 +138,22 @@ const Modal: React.FC<ModalProps> = ({
             <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
               <div className="sm:flex sm:items-start">
                 <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">
-                    Select a User Agent
+                  <h3 className="text-xl leading-6 text-blue-600">
+                    Configure Browser Settings
                   </h3>
                   <div className="mt-2">
+                    {/* Select for User Agent */}
+                    <label
+                      htmlFor="userAgentSelect"
+                      className="block text-lg leading-5 text-gray-700 mb-2" // Added mb-2 for margin-bottom
+                    >
+                      Change User Agent below (optional)
+                    </label>
                     <select
                       id="userAgentSelect"
                       value={selectedUserAgent}
                       onChange={handleSelectUserAgent}
+                      className="block w-full pl-3 pr-10 py-2 text-base leading-6 border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md" // Additional styling for full-width and focus
                     >
                       <option value="">None</option>
                       {userAgent &&
@@ -91,6 +163,52 @@ const Modal: React.FC<ModalProps> = ({
                           </option>
                         ))}
                     </select>
+                    {/* Checkbox for WebRTC */}
+                    <div className="mt-4">
+                      <label className="inline-flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={webRTCEnabled}
+                          onChange={handleWebRTCToggle}
+                          className="form-checkbox rounded text-blue-600 focus:border-blue-600 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                        />
+                        <span
+                          className={`ml-2 ${
+                            webRTCEnabled ? "text-green-500" : "text-red-500"
+                          }`}
+                        >
+                          {webRTCEnabled
+                            ? "webRTC protection is enabled"
+                            : "webRTC protection is disabled"}
+                        </span>
+                      </label>
+                    </div>
+                    {/* Checkbox for iframes */}
+                    <div className="mt-4">
+                      <label className="inline-flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={iframesEnabled}
+                          onChange={handleIframesToggle}
+                          className="form-checkbox rounded text-blue-600 focus:border-blue-600 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                        />
+                        <span
+                          className={`ml-2 ${
+                            iframesEnabled ? "text-green-500" : "text-red-500"
+                          }`}
+                        >
+                          {iframesEnabled
+                            ? "iframes protection is enabled"
+                            : "iframes protection is disabled"}
+                        </span>
+                      </label>
+                    </div>
+                    <div
+                      className="modal-content"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* Include user agent selection, WebRTC toggle, etc. */}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -109,7 +227,7 @@ const Modal: React.FC<ModalProps> = ({
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="inline-flex justify-center w-full rounded-md border border-transparent px-4 py-2 bg-red-600 text-base leading-6 font-medium text-white shadow-sm hover:bg-red-500 focus:outline-none focus:border-red-700 focus:shadow-outline-red transition ease-in-out duration-150 sm:text-sm sm:leading-5"
+                  className="inline-flex justify-center w-full rounded-md border border-transparent px-4 py-2 bg-gray-500 text-base leading-6 font-medium text-white shadow-sm hover:bg-gray-700 focus:outline-none focus:border-red-700 focus:shadow-outline-red transition ease-in-out duration-150 sm:text-sm sm:leading-5"
                 >
                   Close
                 </button>

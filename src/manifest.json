@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YPP SwiftProxy Changer",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "YPP SwiftProxy Changer, the ultimate extension. You can seamlessly switch between multiple proxy servers.",
   "icons": {
     "16": "/assets/icons/16x16-active-full.png",
@@ -46,7 +46,6 @@
     "activeTab",
     "privacy",
     "scripting",
-    "tabs",
     "proxy",
     "storage",
     "webRequest",

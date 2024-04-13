@@ -1,38 +1,68 @@
 //@ts-nocheck
 export {};
 
-// Removing iFrames
-function removeIframes(element = document) {
+// content.ts
+
+// Function to remove iframes from the given element
+function removeIframes(element: Element) {
   element.querySelectorAll("iframe").forEach((iframe) => {
     iframe.remove();
   });
 }
 
+// Function to conditionally remove iframes based on local storage setting
+function conditionallyRemoveIframes(element = document) {
+  chrome.storage.local.get("iframes", (result) => {
+    if (chrome.runtime.lastError) {
+      console.error(
+        "Failed to retrieve settings:",
+        chrome.runtime.lastError.message
+      );
+      return;
+    }
+
+    if (result.iframes === "disabled") {
+      console.log("Iframe removal is explicitly disabled via settings.");
+    } else {
+      // Default action is to remove iframes unless disabled
+      removeIframes(element);
+    }
+  });
+}
+
+// Function to observe DOM mutations and apply iframe removal logic
 function observeMutations() {
   const observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      if (mutation.type === "childList") {
-        mutation.addedNodes.forEach((node) => {
-          if (node instanceof Element) {
-            removeIframes(node);
-          }
-        });
-      }
-    }
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (node instanceof Element) {
+          conditionallyRemoveIframes(node); // Apply conditional iframe removal
+        }
+      });
+    });
   });
 
   observer.observe(document.documentElement, {
     childList: true,
     subtree: true,
   });
+
+  // Clean up observer on page unload to avoid memory leaks or invalid context issues
+  window.addEventListener("unload", () => observer.disconnect());
 }
 
-// Remove existing iframes and start observing for new ones when the script is loaded
-removeIframes();
-observeMutations();
+// Main function that encapsulates the core logic of the script
+function main() {
+  observeMutations(); // Start observing the DOM for changes
+  conditionallyRemoveIframes(); // Initial check and removal on the whole document
+}
 
-// Interval as a fallback to catch missed iframes
-setInterval(() => removeIframes(), 1000); // Runs every second
+// Check if the extension's runtime context is still valid before executing the main logic
+if (chrome.runtime.id !== undefined) {
+  main();
+} else {
+  console.log("Extension context is invalidated. Halting script execution.");
+}
 
 function useProperties(properties) {
   // Find the proxy with isActive set to true

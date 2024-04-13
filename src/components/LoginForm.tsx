@@ -342,11 +342,15 @@ const LoginForm = () => {
         <div className="flex justify-center">
           <div className="w-xl">
             <div className="text-xl ml-4 mr-4 mt-10 mb-10">
-              <Link to="/signup" className="text-center text-green-500">
+              <a
+                href="https://www.yourprivateproxy.com/my-account/register"
+                className="text-center text-green-500"
+                target="_blank"
+              >
                 <span className="cursor-pointer text-2xl underline text-green-500">
                   Create an account
                 </span>
-              </Link>{" "}
+              </a>{" "}
               with YourPrivateProxy if you don't have one.
               <span className="text-blue-500"> It's free! </span> Login and
               apply for a free proxy trial.
@@ -391,9 +395,13 @@ const LoginForm = () => {
               </div>
             </form>
             <div className="mt-2 flex flex-col justify-center">
-              <Link to="signup" className="text-2xl text-center text-green-500">
+              <a
+                href="https://www.yourprivateproxy.com/my-account/register"
+                className="text-2xl text-center text-green-500"
+                target="_blank"
+              >
                 Create account
-              </Link>
+              </a>
               <a
                 className="text-2xl text-center text-green-500"
                 target="_blank"
