@@ -1,17 +1,14 @@
 //@ts-nocheck
 export {};
 
-// content.ts
-
-// Function to remove iframes from the given element
-function removeIframes(element: Element) {
-  element.querySelectorAll("iframe").forEach((iframe) => {
-    iframe.remove();
-  });
-}
-
 // Function to conditionally remove iframes based on local storage setting
 function conditionallyRemoveIframes(element = document) {
+  // Check if the extension's runtime context is still valid
+  if (chrome.runtime.id === undefined) {
+    console.log("Extension context is invalidated. Halting iframe removal.");
+    return;
+  }
+
   chrome.storage.local.get("iframes", (result) => {
     if (chrome.runtime.lastError) {
       console.error(
@@ -30,38 +27,65 @@ function conditionallyRemoveIframes(element = document) {
   });
 }
 
+// Function to remove iframes from the given element
+function removeIframes(element) {
+  element.querySelectorAll("iframe").forEach((iframe) => {
+    iframe.remove();
+  });
+}
+
 // Function to observe DOM mutations and apply iframe removal logic
 function observeMutations() {
   const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      mutation.addedNodes.forEach((node) => {
-        if (node instanceof Element) {
-          conditionallyRemoveIframes(node); // Apply conditional iframe removal
-        }
+    try {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node instanceof Element && chrome.runtime.id !== undefined) {
+            conditionallyRemoveIframes(node);
+          }
+        });
       });
-    });
+    } catch (error) {
+      console.error("Mutation observer failed:", error);
+      observer.disconnect(); // Consider disconnecting on failure
+    }
   });
 
-  observer.observe(document.documentElement, {
-    childList: true,
-    subtree: true,
-  });
+  // Initialize observation only if the context is still valid
+  if (chrome.runtime.id !== undefined) {
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+    });
+  } else {
+    console.log(
+      "Extension context is invalidated. Halting mutation observation."
+    );
+  }
 
   // Clean up observer on page unload to avoid memory leaks or invalid context issues
   window.addEventListener("unload", () => observer.disconnect());
 }
 
-// Main function that encapsulates the core logic of the script
-function main() {
-  observeMutations(); // Start observing the DOM for changes
-  conditionallyRemoveIframes(); // Initial check and removal on the whole document
-}
-
-// Check if the extension's runtime context is still valid before executing the main logic
+// Initiate removal and observation if the runtime ID is valid
 if (chrome.runtime.id !== undefined) {
-  main();
+  conditionallyRemoveIframes(); // Initialize with a conditional check
+  observeMutations();
+  // Interval as a fallback to catch missed iframes
+  let intervalId = setInterval(() => {
+    if (chrome.runtime.id === undefined) {
+      console.log(
+        "Extension context is invalidated. Stopping interval-based iframe removal."
+      );
+      clearInterval(intervalId);
+    } else {
+      conditionallyRemoveIframes();
+    }
+  }, 1000);
 } else {
-  console.log("Extension context is invalidated. Halting script execution.");
+  console.log(
+    "Extension context is invalidated at load. No operations will be performed."
+  );
 }
 
 function useProperties(properties) {
