@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Fingerprint from "./Fingerprint";
+import Swal from "sweetalert2";
 
 declare const chrome: any;
 
@@ -60,9 +61,14 @@ const Trial = () => {
 
     if (response.ok) {
       const result = await response.json();
-      alert(
-        "Trial request submited successfully! Give it 2 minutes before your new proxy is active. Also you've been logged out so login again to see your new proxy."
-      );
+      Swal.fire({
+        title: "Trial Request Submitted!",
+        text: "Trial request submitted successfully! Give it 2 minutes before your new proxy is active. Also, you've been logged out, so please log in again to see your new proxy.",
+        icon: "success",
+        toast: true,
+        timer: 3000,
+        timerProgressBar: true,
+      });
       handleLogout();
       setLoading(false);
       // Handle the response data as needed

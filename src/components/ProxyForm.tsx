@@ -4,6 +4,7 @@ import { useModal } from "../hooks/useModal";
 import { useValidation } from "../hooks/useValidation";
 import Proxy from "../interfaces/proxy";
 import ProxyList from "./ProxyList";
+import Swal from "sweetalert2";
 
 declare const chrome: any;
 
@@ -85,8 +86,14 @@ function ProxyForm() {
 
     // Prevent header activation if the proxy is not active
     if (!proxy.isActive) {
-      alert("Please activate the proxy before activating headers.");
-      return;
+      Swal.fire({
+        title: "Error!",
+        text: "You need to activate the proxy first.",
+        icon: "error",
+        toast: true,
+        timer: 3000,
+        timerProgressBar: true,
+      });
     }
 
     handleToggleHeaders(index);
@@ -252,54 +259,104 @@ function ProxyForm() {
   }
 
   function handleRemoveProxy(index: number) {
-    const proxy = proxies[index];
-    if (proxy.isActive) {
-      chrome.runtime.sendMessage({ type: "deactivateProxy" }, () => {
-        setProxies((prevProxies) => {
-          const newProxies = prevProxies.filter((_, i) => i !== index);
-          // Update the isActive property of the remaining proxies
-          newProxies.forEach((proxy, i) => {
-            if (i !== index) {
-              proxy.isActive = false;
-            }
+    const proxy = proxies[index]; // Access the proxy details earlier to use in the Swal.fire call
+    Swal.fire({
+      title: "Are you sure?",
+      html: `Do you want to remove this proxy <span style="color: blue;">${proxy.host}:${proxy.port}</span> from the list?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, remove it!",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        if (proxy.isActive) {
+          chrome.runtime.sendMessage({ type: "deactivateProxy" }, () => {
+            setProxies((prevProxies) => {
+              const newProxies = prevProxies.filter((_, i) => i !== index);
+              // Update the isActive property of the remaining proxies
+              newProxies.forEach((proxy, i) => {
+                if (i !== index) {
+                  proxy.isActive = false;
+                }
+              });
+
+              // Update the chrome.storage.local with the newProxies
+              chrome.storage.local.set({ proxies: newProxies }, () => {
+                console.log("Proxies updated in storage after removal.");
+              });
+
+              return newProxies;
+            });
+
+            chrome.runtime.sendMessage({
+              type: "deactivateHeaders",
+              host: proxy.host,
+              port: proxy.port,
+            });
+            chrome.runtime.sendMessage({ type: "deactivateContentScript" });
+
+            Swal.fire({
+              title: "Removed!",
+              html: `The proxy <span style="color: blue;">${proxy.host}:${proxy.port}</span> has been removed.`,
+              icon: "success",
+              toast: true,
+              timer: 3000,
+              timerProgressBar: true,
+            });
+          });
+        } else {
+          setProxies((prevProxies) => {
+            const newProxies = prevProxies.filter((_, i) => i !== index);
+
+            // Update the chrome.storage.local with the newProxies
+            chrome.storage.local.set({ proxies: newProxies }, () => {
+              console.log("Proxies updated in storage after removal.");
+            });
+
+            return newProxies;
           });
 
-          // Update the chrome.storage.local with the newProxies
-          chrome.storage.local.set({ proxies: newProxies }, () => {
-            console.log("Proxies updated in storage after removal.");
+          Swal.fire({
+            title: "Removed!",
+            html: `The proxy <span style="color: blue;">${proxy.host}:${proxy.port}</span> has been removed.`,
+            icon: "success",
+            toast: true,
+            timer: 3000,
+            timerProgressBar: true,
           });
-
-          return newProxies;
-        });
-        chrome.runtime.sendMessage({
-          type: "deactivateHeaders",
-          host: proxy.host,
-          port: proxy.port,
-        });
-        chrome.runtime.sendMessage({ type: "deactivateContentScript" });
-      });
-    } else {
-      setProxies((prevProxies) => {
-        const newProxies = prevProxies.filter((_, i) => i !== index);
-
-        // Update the chrome.storage.local with the newProxies
-        chrome.storage.local.set({ proxies: newProxies }, () => {
-          console.log("Proxies updated in storage after removal.");
-        });
-
-        return newProxies;
-      });
-    }
+        }
+      }
+    });
   }
 
   const handleRemoveAllProxies = () => {
-    if (window.confirm("Are you sure you want to remove all proxies?")) {
-      chrome.runtime.sendMessage({ type: "deactivateProxy" }, () => {
-        setProxies([]);
-        chrome.runtime.sendMessage({ type: "deactivateHeaders" });
-        chrome.runtime.sendMessage({ type: "deactivateContentScript" });
-      });
-    }
+    Swal.fire({
+      title: "Are you sure?",
+      text: "Do you want to remove all proxies?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, remove them!",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        chrome.runtime.sendMessage({ type: "deactivateProxy" }, () => {
+          setProxies([]); // Reset proxies state
+          chrome.runtime.sendMessage({ type: "deactivateHeaders" });
+          chrome.runtime.sendMessage({ type: "deactivateContentScript" });
+        });
+
+        Swal.fire({
+          title: "Deleted!",
+          text: "All proxies have been removed.",
+          icon: "success",
+          toast: true,
+          timer: 3000,
+          timerProgressBar: true,
+        });
+      }
+    });
   };
 
   const handleSelectUserAgent = (event: any) => {

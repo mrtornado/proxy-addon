@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import Swal from "sweetalert2";
 
 declare const chrome: any;
 
@@ -15,9 +16,14 @@ export function useModal(
       );
 
       if (headersActive) {
-        alert(
-          "You need to deactivate headers before you can change the user agent."
-        );
+        Swal.fire({
+          title: "Action Needed",
+          text: "You need to deactivate headers before you can change the user agent.",
+          icon: "warning",
+          toast: true,
+          timer: 5000,
+          timerProgressBar: true,
+        });
       } else {
         // Fetch the latest user agent list and call the onUpdate callback
         chrome.storage.local.get(

@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useActivated } from "../hooks/useLoggedIn";
 import Fingerprint from "./Fingerprint";
 import useDeactivateActiveProxy from "../hooks/useDeactivateActiveProxy";
+import Swal from "sweetalert2";
 
 declare const chrome: any;
 
@@ -36,9 +37,15 @@ const LoginForm = () => {
           navigate("/proxy");
         } else {
           resolve(true);
-          alert(
-            "You have NO PROXIES, sign up for a trial if you didn't already. If you did just get some proxies"
-          );
+          Swal.fire({
+            title: "No Proxies Available",
+            text: "You have NO PROXIES. Sign up for a trial if you haven't already. If you have, just get some proxies.",
+            icon: "info",
+            toast: true,
+            timer: 3000,
+            timerProgressBar: true,
+          });
+
           navigate("/proxy");
         }
       });
@@ -91,14 +98,27 @@ const LoginForm = () => {
 
                 if (uniqueProxies.length > 0) {
                   chrome.storage.local.set({ proxies: uniqueProxies }, () => {
-                    alert("Proxies have been inserted!");
+                    Swal.fire({
+                      title: "Success!",
+                      text: "Proxies have been added to the Proxy List!",
+                      icon: "success",
+                      toast: true,
+                      timer: 3000,
+                      timerProgressBar: true,
+                    });
+
                     resolve(true);
                     setLoginLoading(false);
                   });
                 } else {
-                  alert(
-                    "No proxies were inserted! because you don't have any proxies with us, or all your proxies are socks5"
-                  );
+                  Swal.fire({
+                    title: "No Proxies Inserted!",
+                    text: "No proxies were inserted because you don't have any proxies with us, or all your proxies are socks5.",
+                    icon: "error",
+                    toast: true,
+                    timer: 3000,
+                    timerProgressBar: true,
+                  });
                   navigate("/proxies");
                   setLoginLoading(false);
                 }
@@ -405,7 +425,7 @@ const LoginForm = () => {
               <a
                 className="text-2xl text-center text-green-500"
                 target="_blank"
-                href="https://ypp.deno.dev/forgot"
+                href="https://www.yourprivateproxy.com/my-account/password-reset"
               >
                 Forgot Password?
               </a>

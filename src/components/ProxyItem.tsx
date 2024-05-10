@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   MdPowerSettingsNew,
   MdDelete,
@@ -31,6 +31,27 @@ const ProxyItem: React.FC<ProxyItemProps> = ({
   handleRemoveProxy,
   handleHeaderActivation,
 }) => {
+  // Function to handle copying to clipboard
+  const [copyFeedback, setCopyFeedback] = useState("");
+  const [feedbackPos, setFeedbackPos] = useState({ left: 0, top: 0 });
+
+  const handleCopyToClipboard = async (
+    text: string,
+    event: React.MouseEvent
+  ) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopyFeedback("Copied to clipboard!");
+      setFeedbackPos({ left: event.clientX - 30, top: event.clientY + 20 });
+      setTimeout(() => setCopyFeedback(""), 2000); // Message disappears after 2 seconds
+    } catch (err) {
+      console.error("Failed to copy!", err);
+      setCopyFeedback("Failed to copy!");
+      setFeedbackPos({ left: event.clientX - 30, top: event.clientY + 20 });
+      setTimeout(() => setCopyFeedback(""), 2000); // Message disappears after 2 seconds
+    }
+  };
+
   return (
     <div
       key={absoluteIndex}
@@ -46,12 +67,34 @@ const ProxyItem: React.FC<ProxyItemProps> = ({
                 proxy.isActive ? "mr-5 text-[#fffed8]" : "mr-5 text-blue"
               }`}
             >{`IP${absoluteIndex + 1}:`}</span>
-            {`${proxy.host}:${proxy.port}`}
+            <span
+              className="select-all cursor-pointer"
+              onClick={(e) =>
+                handleCopyToClipboard(`${proxy.host}:${proxy.port}`, e)
+              }
+            >
+              {`${proxy.host}:${proxy.port}`}
+            </span>
           </p>
+          {copyFeedback && (
+            <div
+              style={{
+                position: "absolute",
+                left: feedbackPos.left,
+                top: feedbackPos.top,
+                backgroundColor: "green",
+                color: "white",
+                padding: "4px 8px",
+                borderRadius: "4px",
+              }}
+            >
+              {copyFeedback}
+            </div>
+          )}
         </div>
         <div className="ml-auto">
           {proxy.isActive ? (
-            <Tooltip message="Deactivate Proxy">
+            <Tooltip message="Deactivate Proxy" color="red-500">
               <MdPowerSettingsNew
                 onClick={() => handleDeactivateProxy(originalIndex, () => {})}
                 className={`cursor-pointer ${
@@ -71,7 +114,7 @@ const ProxyItem: React.FC<ProxyItemProps> = ({
           )}
         </div>
 
-        <Tooltip message="Remove Proxy from Proxies List">
+        <Tooltip message="Remove Proxy" color="red-500">
           <div>
             <MdDelete
               onClick={() => handleRemoveProxy(absoluteIndex)}
@@ -81,7 +124,7 @@ const ProxyItem: React.FC<ProxyItemProps> = ({
         </Tooltip>
         <div>
           {proxy.headersActive ? (
-            <Tooltip message="Deactivate Headers Faking">
+            <Tooltip message="Deactivate Headers Faking" color="red-500">
               <MdSettingsEthernet
                 onClick={() => handleHeaderActivation(absoluteIndex)}
                 className={`cursor-pointer ${

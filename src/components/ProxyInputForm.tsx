@@ -96,15 +96,22 @@ const ProxyInputForm: React.FC<ProxyInputFormProps> = ({
       </div>
       <div className="flex">
         <div>
-          <DefaultButton onClick={handleShowModal}>
-            Configure Browser Settings
-          </DefaultButton>
+          <Tooltip message="Change UserAgent, Enable/Disable webRTC & iframes">
+            <DefaultButton onClick={handleShowModal}>
+              Configure Browser Settings
+            </DefaultButton>
+          </Tooltip>
           {loggedIn ? (
             ""
           ) : (
-            <Link className="text-green-500 text-xl" to="/signup">
-              Create YPP account and load multiple proxies.
-            </Link>
+            <a
+              target="_blank"
+              href="https://www.yourprivateproxy.com/my-account/register"
+            >
+              <span className="cursor-pointer ml-2 text-2xl underline text-green-500">
+                Create YPP account and load multiple proxies.
+              </span>
+            </a>
           )}
 
           <Modal

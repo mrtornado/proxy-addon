@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Swal from "sweetalert2";
 
 interface Validation {
   host: string;
@@ -24,18 +25,42 @@ export const useValidation = (
 
   function handleAddProxy() {
     if (!host || !port) {
-      alert("Please enter an IP address and port");
+      Swal.fire({
+        title: "Input Required",
+        text: "Please enter an IP address and port.",
+        icon: "info",
+        toast: true,
+        timer: 3000,
+        timerProgressBar: true,
+      });
+
       return;
     }
 
     if (!isValidIPAddress(host)) {
-      alert("Invalid IP address format. Please enter a valid IP address.");
+      Swal.fire({
+        title: "Input Required",
+        text: "Invalid IP address format. Please enter a valid IP address. Format: 111.222.333.222",
+        icon: "info",
+        toast: true,
+        timer: 3000,
+        timerProgressBar: true,
+      });
+
       return;
     }
 
     const existingProxy = proxies.find((proxy) => proxy.host === host);
     if (existingProxy) {
-      alert("This proxy host is already in the list");
+      Swal.fire({
+        title: "Input Required",
+        text: "This proxy ip address is already in the list.",
+        icon: "info",
+        toast: true,
+        timer: 3000,
+        timerProgressBar: true,
+      });
+
       return;
     }
 
